@@ -1,0 +1,15 @@
+D:\C#\QuickSound\obj\Debug\QuickSound.csproj.AssemblyReference.cache
+D:\C#\QuickSound\obj\Debug\QuickSound.GeneratedMSBuildEditorConfig.editorconfig
+D:\C#\QuickSound\obj\Debug\QuickSound.AssemblyInfoInputs.cache
+D:\C#\QuickSound\obj\Debug\QuickSound.AssemblyInfo.cs
+D:\C#\QuickSound\obj\Debug\QuickSound.csproj.CoreCompileInputs.cache
+D:\C#\QuickSound\Build\raylib.dll
+D:\C#\QuickSound\Build\QuickSound.exe
+D:\C#\QuickSound\Build\QuickSound.runtimeconfig.json
+D:\C#\QuickSound\Build\QuickSound.dll
+D:\C#\QuickSound\Build\QuickSound.pdb
+D:\C#\QuickSound\Build\Raylib-cs.dll
+D:\C#\QuickSound\obj\Debug\QuickSound.csproj.Up2Date
+D:\C#\QuickSound\obj\Debug\QuickSound.dll
+D:\C#\QuickSound\obj\Debug\QuickSound.pdb
+D:\C#\QuickSound\obj\Debug\QuickSound.genruntimeconfig.cache
