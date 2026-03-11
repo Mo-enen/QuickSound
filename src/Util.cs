@@ -6,10 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using Raylib_cs;
+
+namespace QuickSound;
 
 static partial class Util {
-
 
 	// File
 	public static void TextToFile (string data, string path, Encoding encoding, bool append = false) {
@@ -106,6 +106,38 @@ static partial class Util {
 		return true;
 	}
 
+	// File-Date
+	public static long GetFileModifyDate (string path) {
+		if (!FileExists(path)) return 0;
+		return File.GetLastWriteTime(path).ToFileTimeUtc();
+	}
+
+	public static long GetFolderModifyDate (string path) {
+		if (!FolderExists(path)) return 0;
+		return Directory.GetLastWriteTime(path).ToFileTimeUtc();
+	}
+
+	public static void SetFolderModifyDate (string path, long fileTime) {
+		if (!FolderExists(path)) return;
+		Directory.SetLastWriteTime(path, System.DateTime.FromFileTimeUtc(fileTime));
+	}
+
+	public static long GetFileCreationDate (string path) {
+		if (!FileExists(path)) return 0;
+		return File.GetCreationTime(path).ToFileTimeUtc();
+	}
+
+	public static long GetFolderCreationDate (string path) {
+		if (!FolderExists(path)) return 0;
+		return Directory.GetCreationTime(path).ToFileTimeUtc();
+	}
+
+	public static void SetFileModifyDate (string path, long fileTime) {
+		if (!FileExists(path)) return;
+		File.SetLastWriteTime(path, System.DateTime.FromFileTime(fileTime));
+	}
+
+	public static long GetCurrentFileTime () => System.DateTime.UtcNow.ToFileTimeUtc();
 
 	// Path
 	public static string GetParentPath (string path) {

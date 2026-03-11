@@ -3,6 +3,18 @@
   "WorkspaceRootPath": "D:\\C#\\QuickSound\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{30B5C2F3-CABC-D3A5-0FC5-9DF01CCB3657}|QuickSound.csproj|d:\\c#\\quicksound\\src\\rayflow\\flow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{30B5C2F3-CABC-D3A5-0FC5-9DF01CCB3657}|QuickSound.csproj|solutionrelative:src\\rayflow\\flow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{30B5C2F3-CABC-D3A5-0FC5-9DF01CCB3657}|QuickSound.csproj|d:\\c#\\quicksound\\src\\wave.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{30B5C2F3-CABC-D3A5-0FC5-9DF01CCB3657}|QuickSound.csproj|solutionrelative:src\\wave.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{30B5C2F3-CABC-D3A5-0FC5-9DF01CCB3657}|QuickSound.csproj|d:\\c#\\quicksound\\src\\util.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{30B5C2F3-CABC-D3A5-0FC5-9DF01CCB3657}|QuickSound.csproj|solutionrelative:src\\util.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{30B5C2F3-CABC-D3A5-0FC5-9DF01CCB3657}|QuickSound.csproj|d:\\c#\\quicksound\\src\\entry.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{30B5C2F3-CABC-D3A5-0FC5-9DF01CCB3657}|QuickSound.csproj|solutionrelative:src\\entry.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
@@ -47,14 +59,53 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Flow.cs",
+              "DocumentMoniker": "D:\\C#\\QuickSound\\src\\RayFlow\\Flow.cs",
+              "RelativeDocumentMoniker": "src\\RayFlow\\Flow.cs",
+              "ToolTip": "D:\\C#\\QuickSound\\src\\RayFlow\\Flow.cs",
+              "RelativeToolTip": "src\\RayFlow\\Flow.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAjwBwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-11T15:30:48.075Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Util.cs",
+              "DocumentMoniker": "D:\\C#\\QuickSound\\src\\Util.cs",
+              "RelativeDocumentMoniker": "src\\Util.cs",
+              "ToolTip": "D:\\C#\\QuickSound\\src\\Util.cs",
+              "RelativeToolTip": "src\\Util.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-11T15:15:36.347Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Wave.cs",
+              "DocumentMoniker": "D:\\C#\\QuickSound\\src\\Wave.cs",
+              "RelativeDocumentMoniker": "src\\Wave.cs",
+              "ToolTip": "D:\\C#\\QuickSound\\src\\Wave.cs",
+              "RelativeToolTip": "src\\Wave.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAA4wDsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-11T15:15:15.502Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "Entry.cs",
               "DocumentMoniker": "D:\\C#\\QuickSound\\src\\Entry.cs",
               "RelativeDocumentMoniker": "src\\Entry.cs",
               "ToolTip": "D:\\C#\\QuickSound\\src\\Entry.cs",
               "RelativeToolTip": "src\\Entry.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAAAAABsAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-11T13:29:58.229Z",
+              "WhenOpened": "2026-03-11T15:14:05.481Z",
               "EditorCaption": ""
             }
           ]

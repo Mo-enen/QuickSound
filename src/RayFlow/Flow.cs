@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using Raylib_cs;
 
-public static class Workflow {
+public static class Flow {
 
 	public static int WindowWidth = 1000;
 	public static int WindowHeight = 1000;
@@ -19,11 +19,11 @@ public static class Workflow {
 	public static string DevName;
 
 	public static void Run (Action start, Action update, Action quit, string devName = "RayFlow") {
-		Workflow.Init();
 		DevName = devName;
+		Flow.Init();
 		start?.Invoke();
-		Workflow.Loop(update);
-		Workflow.Quit();
+		Flow.Loop(update);
+		Flow.Quit();
 		quit?.Invoke();
 	}
 
@@ -32,14 +32,14 @@ public static class Workflow {
 		Console.Clear();
 #endif
 		// Load Config
-		SavingFolder = Util.CombinePaths(Environment.GetFolderPath(
+		SavingFolder = CombinePaths(Environment.GetFolderPath(
 			Environment.SpecialFolder.LocalApplicationData),
 			DevName,
-			typeof(Workflow).Assembly.GetName().Name
+			typeof(Flow).Assembly.GetName().Name
 		);
-		string path = Util.CombinePaths(SavingFolder, "Config.txt");
-		Util.CreateFolder(SavingFolder);
-		foreach (string line in Util.ForAllLinesInFile(path, Encoding.UTF8)) {
+		string path = CombinePaths(SavingFolder, "Config.txt");
+		CreateFolder(SavingFolder);
+		foreach (string line in ForAllLinesInFile(path)) {
 			int cIndex = line.IndexOf(':');
 			if (cIndex < 0 || cIndex + 1 >= line.Length) continue;
 			if (line.StartsWith("WindowX:") && int.TryParse(line[(cIndex + 1)..], out int x)) {
@@ -89,12 +89,12 @@ public static class Workflow {
 		}
 		WindowX = Math.Clamp(WindowX, 0, Math.Max(1, monitorW - WindowWidth));
 		WindowY = Math.Clamp(WindowY, 0, Math.Max(1, monitorH - WindowHeight));
-		if (Workflow.RequireMaximize) {
+		if (Flow.RequireMaximize) {
 			Raylib.MaximizeWindow();
 		}
 		Raylib.SetWindowPosition(WindowX, WindowY);
 		Raylib.SetWindowSize(WindowWidth, WindowHeight);
-		Raylib.SetWindowTitle(Util.GetDisplayName(assembly.GetName().Name));
+		Raylib.SetWindowTitle(GetDisplayName(assembly.GetName().Name));
 		Raylib.SetWindowFocused();
 
 		// Resource
@@ -123,7 +123,7 @@ public static class Workflow {
 
 	private static void Quit () {
 		Raylib.CloseAudioDevice();
-		string path = Util.CombinePaths(SavingFolder, "Config.txt");
+		string path = CombinePaths(SavingFolder, "Config.txt");
 		var builder = new StringBuilder();
 		if (!Raylib.IsWindowMinimized()) {
 			builder.AppendLine($"WindowX:{Raylib.GetWindowPosition().X}");
@@ -137,10 +137,69 @@ public static class Workflow {
 			builder.AppendLine($"WindowHeight:{WindowHeight}");
 		}
 		builder.AppendLine($"Maximized:{Raylib.IsWindowMaximized()}");
-		Util.TextToFile(builder.ToString(), path, Encoding.UTF8);
+		TextToFile(builder.ToString(), path);
 #if DEBUG
 		DevUtil.Debug_OnAppEnd();
 #endif
+	}
+
+	// UTL
+	private static string CombinePaths (string path1, string path2) => Path.Combine(path1, path2);
+	private static string CombinePaths (string path1, string path2, string path3) => Path.Combine(path1, path2, path3);
+
+	private static void CreateFolder (string path) {
+		if (string.IsNullOrEmpty(path) || FolderExists(path)) return;
+		string pPath = GetParentPath(path);
+		if (!FolderExists(pPath)) {
+			CreateFolder(pPath);
+		}
+		Directory.CreateDirectory(path);
+	}
+
+	private static bool FolderExists (string path) => Directory.Exists(path);
+
+	private static string GetParentPath (string path) {
+		if (string.IsNullOrEmpty(path)) return "";
+		var info = Directory.GetParent(path);
+		return info != null ? info.FullName : "";
+	}
+
+	private static IEnumerable<string> ForAllLinesInFile (string path) {
+		if (!FileExists(path)) yield break;
+		using StreamReader sr = new(path, Encoding.UTF8);
+		while (sr.Peek() >= 0) yield return sr.ReadLine();
+	}
+
+	private static bool FileExists (string path) => !string.IsNullOrEmpty(path) && File.Exists(path);
+
+	private static string GetDisplayName (string name) {
+
+		// Add " " Space Between "a Aa"
+		for (int i = 0; i < name.Length - 1; i++) {
+			char a = name[i];
+			char b = name[i + 1];
+			if (
+				char.IsLetter(a) &&
+				(char.IsLetter(b) || char.IsNumber(b)) &&
+				!char.IsUpper(a) &&
+				(char.IsUpper(b) || char.IsNumber(b))
+			) {
+				name = name.Insert(i + 1, " ");
+				i++;
+			}
+		}
+
+		return name;
+	}
+
+	private static void TextToFile (string data, string path, bool append = false) {
+		CreateFolder(GetParentPath(path));
+		using FileStream fs = new(path, append ? FileMode.Append : FileMode.Create);
+		using StreamWriter sw = new(fs, Encoding.UTF8);
+		sw.Write(data);
+		fs.Flush();
+		sw.Close();
+		fs.Close();
 	}
 
 }
