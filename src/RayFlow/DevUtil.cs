@@ -7,6 +7,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Raylib_cs;
 
+namespace RayFlow;
+
 public static partial class DevUtil {
 
 	private const int SW_MAXIMIZE = 3;

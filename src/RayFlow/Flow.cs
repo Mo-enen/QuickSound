@@ -9,10 +9,9 @@ using ImGuiNET;
 using Raylib_cs;
 using rlImGui_cs;
 
-public static class Flow {
+namespace RayFlow;
 
-	// Api
-	public static string SavingFolder { get; private set; }
+public static class Flow {
 
 	// Data
 	private static int WindowWidth = 1000;
@@ -20,32 +19,38 @@ public static class Flow {
 	private static int WindowX = -1;
 	private static int WindowY = -1;
 	private static bool RequireMaximize = false;
-	private static string DevName;
 	private static ImFontPtr MainFontPtr;
 
 	// API
-	public static void Run (Action start, Action update, Action quit, string devName = "Default") {
-		DevName = devName;
-		Flow.Init();
-		start?.Invoke();
-		Flow.Loop(update);
-		Flow.Quit();
-		quit?.Invoke();
+	public static void Run () {
+		if (GetWindow() is not FlowWindow window) return;
+		Init(window.SavingFolder);
+		window.Start();
+		Loop(window);
+		Quit(window.SavingFolder);
+		window.Quit();
 	}
 
 	// MSG
-	private static void Init () {
+	private static FlowWindow GetWindow () {
+		if (Assembly.GetEntryAssembly() is not Assembly entry) return null;
+		var windowType = typeof(FlowWindow);
+		foreach (var type in entry.ExportedTypes) {
+			if (type.IsSubclassOf(windowType)) {
+				if (System.Activator.CreateInstance(type) is not FlowWindow fWindow) continue;
+				return fWindow;
+			}
+		}
+		return null;
+	}
+
+	private static void Init (string savingFolder) {
 #if DEBUG
 		Console.Clear();
 #endif
 		// Load Config
-		SavingFolder = CombinePaths(Environment.GetFolderPath(
-			Environment.SpecialFolder.LocalApplicationData),
-			DevName,
-			typeof(Flow).Assembly.GetName().Name
-		);
-		string path = CombinePaths(SavingFolder, "Config.txt");
-		CreateFolder(SavingFolder);
+		string path = CombinePaths(savingFolder, "Config.txt");
+		CreateFolder(savingFolder);
 		foreach (string line in ForAllLinesInFile(path)) {
 			int cIndex = line.IndexOf(':');
 			if (cIndex < 0 || cIndex + 1 >= line.Length) continue;
@@ -97,7 +102,7 @@ public static class Flow {
 		}
 		WindowX = Math.Clamp(WindowX, 0, Math.Max(1, monitorW - WindowWidth));
 		WindowY = Math.Clamp(WindowY, 0, Math.Max(1, monitorH - WindowHeight));
-		if (Flow.RequireMaximize) {
+		if (RequireMaximize) {
 			Raylib.MaximizeWindow();
 		}
 		Raylib.SetWindowPosition(WindowX, WindowY);
@@ -152,7 +157,7 @@ public static class Flow {
 		GC.Collect();
 	}
 
-	private static void Loop (Action update) {
+	private static void Loop (FlowWindow window) {
 		while (!Raylib.WindowShouldClose()) {
 			if (!Raylib.IsWindowMinimized()) {
 				Raylib.BeginDrawing();
@@ -161,11 +166,17 @@ public static class Flow {
 				ImGui.Begin("Main", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoResize);
 				const int WIN_PADDING = 20;
 				try {
-					ImGui.SetWindowPos(new(WIN_PADDING, WIN_PADDING));
-					ImGui.SetWindowSize(new(WindowWidth - WIN_PADDING * 2, WindowHeight - WIN_PADDING * 2));
-					ImGui.SetWindowFontScale(2f);
+					WindowWidth = Raylib.GetScreenWidth();
+					WindowHeight = Raylib.GetScreenHeight();
 					using var _ = new FontScope(MainFontPtr);
-					update?.Invoke();
+					window.Width = WindowWidth - WIN_PADDING * 2;
+					window.Height = WindowHeight - WIN_PADDING * 2;
+					ImGui.SetWindowPos(new(WIN_PADDING, WIN_PADDING));
+					ImGui.SetWindowSize(new(window.Width, window.Height));
+					ImGui.SetWindowFontScale(2f);
+					window.RequireCursor = MouseCursor.Default;
+					window.Update();
+					Raylib.SetMouseCursor(window.RequireCursor);
 				} catch (Exception ex) { Debug.LogError(ex); }
 				ImGui.End();
 				rlImGui.End();
@@ -174,10 +185,10 @@ public static class Flow {
 		}
 	}
 
-	private static void Quit () {
+	private static void Quit (string savingFolder) {
 		rlImGui.Shutdown();
 		Raylib.CloseAudioDevice();
-		string path = CombinePaths(SavingFolder, "Config.txt");
+		string path = CombinePaths(savingFolder, "Config.txt");
 		var builder = new StringBuilder();
 		if (!Raylib.IsWindowMinimized()) {
 			builder.AppendLine($"WindowX:{Raylib.GetWindowPosition().X}");

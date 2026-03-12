@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System;
 using ImGuiNET;
+using System.Numerics;
 
+namespace RayFlow;
 
 public readonly struct DisableScope : IDisposable {
 	public DisableScope () => ImGui.BeginDisabled();
@@ -43,3 +45,11 @@ public readonly struct FontScope : IDisposable {
 	public FontScope (ImFontPtr font) => ImGui.PushFont(font);
 	public void Dispose () => ImGui.PopFont();
 }
+
+
+public readonly struct StyleColorScope : IDisposable {
+	public StyleColorScope () : this(default, default) { }
+	public StyleColorScope (ImGuiCol col, Vector4 value) => ImGui.PushStyleColor(col, value);
+	public void Dispose () => ImGui.PopStyleColor();
+}
+

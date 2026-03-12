@@ -1,38 +1,73 @@
 ﻿using System;
+using System.Numerics;
 using System.Collections;
 using System.Collections.Generic;
 using Raylib_cs;
-using QuickSound;
+using RayFlow;
+using ImGuiNET;
+using rlImGui_cs;
 using Wave = QuickSound.Wave;
 
-Flow.Run(Window.Start, Window.Update, Window.Quit, devName: "Moenen");
-
-public static class Window {
+namespace QuickSound;
 
 
-	// VAR
-	private static string AudioRootPath;
+public class Window : FlowWindow {
 
 
-	// MSG
-	public static void Start () {
+
+
+	#region --- VAR ---
+
+
+	// Api
+	public override string DeveloperName => "Moenen";
+
+	// Data
+	private string AudioRootPath;
+
+
+	#endregion
+
+
+
+
+	#region --- MSG ---
+
+
+	public override void Start () {
 		AudioRootPath = Util.GetParentPath(System.Environment.ProcessPath);
-		Wave.WaveCacheRoot = Util.CombinePaths(Flow.SavingFolder, "Wave");
+		Wave.WaveCacheRoot = Util.CombinePaths(SavingFolder, "Wave");
 		WavePool.StartBackgroundLoop();
 	}
 
 
-	public static void Update () {
+	public override void Update () {
 
-
-
+		if (Button(" Test ")) {
+			Debug.Log("Test");
+		}
 
 
 	}
 
 
-	public static void Quit () {
+	public override void Quit () {
 
 	}
+
+
+	#endregion
+
+
+
+
+	#region --- LGC ---
+
+
+
+	#endregion
+
+
+
 
 }
