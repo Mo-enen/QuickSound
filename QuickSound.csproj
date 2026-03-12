@@ -25,21 +25,21 @@
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 		<RootNamespace>QuickSound</RootNamespace>
-		<ApplicationIcon>Icon.ico</ApplicationIcon>
+		<ApplicationIcon>res\Icon.ico</ApplicationIcon>
 
 		<OutputPath>$(SolutionDir)Build</OutputPath>
 		<PublishDir>$(SolutionDir)Publish</PublishDir>
 
 	</PropertyGroup>
 
-	
+
 	<!--Debug Only-->
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
 		<OutputType>Exe</OutputType>
 		<DebugType>portable</DebugType>
 	</PropertyGroup>
 
-	
+
 	<!--Release Only-->
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
 		<OutputType>WinExe</OutputType>
@@ -56,17 +56,26 @@
 		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 	</PropertyGroup>
 	<ItemGroup>
-	  <None Remove=".gitattributes" />
-	  <None Remove=".gitignore" />
-	  <None Remove="desktop.ini" />
-	  <None Remove="Icon.png" />
+		<None Remove=".gitattributes" />
+		<None Remove=".gitignore" />
+		<None Remove="desktop.ini" />
+		<None Remove="Icon.png" />
+		<None Remove="LICENSE" />
+		<None Remove="res\Font.ttf" />
+		<None Remove="res\Icon.png" />
 	</ItemGroup>
 
 
 	<!--Ref-->
 	<ItemGroup>
 		<Reference Include="raylib-cs">
-			<HintPath>lib\raylib-cs.dll</HintPath>
+			<HintPath>lib\Raylib-cs.dll</HintPath>
+		</Reference>
+		<Reference Include="ImGui.NET">
+			<HintPath>lib\ImGui.NET.dll</HintPath>
+		</Reference>
+		<Reference Include="rlImGui">
+			<HintPath>lib\rlImGui.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 
@@ -77,10 +86,17 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<TargetPath>raylib.dll</TargetPath>
 		</ContentWithTargetPath>
+		<ContentWithTargetPath Include="lib\cimgui.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>cimgui.dll</TargetPath>
+		</ContentWithTargetPath>
 	</ItemGroup>
+
+	
+	<!--Embedded-->
 	<ItemGroup>
-	  <EmbeddedResource Include="Icon.png" />
+		<EmbeddedResource Include="res\*" />
 	</ItemGroup>
 
-
+	
 </Project>

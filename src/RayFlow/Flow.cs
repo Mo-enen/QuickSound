@@ -5,20 +5,26 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using ImGuiNET;
 using Raylib_cs;
+using rlImGui_cs;
 
 public static class Flow {
 
-	public static int WindowWidth = 1000;
-	public static int WindowHeight = 1000;
-	public static int WindowX = -1;
-	public static int WindowY = -1;
-	public static bool RequireMaximize = false;
-	public static Font DefaultFont;
-	public static string SavingFolder;
-	public static string DevName;
+	// Api
+	public static string SavingFolder { get; private set; }
 
-	public static void Run (Action start, Action update, Action quit, string devName = "RayFlow") {
+	// Data
+	private static int WindowWidth = 1000;
+	private static int WindowHeight = 1000;
+	private static int WindowX = -1;
+	private static int WindowY = -1;
+	private static bool RequireMaximize = false;
+	private static string DevName;
+	private static ImFontPtr MainFontPtr;
+
+	// API
+	public static void Run (Action start, Action update, Action quit, string devName = "Default") {
 		DevName = devName;
 		Flow.Init();
 		start?.Invoke();
@@ -27,6 +33,7 @@ public static class Flow {
 		quit?.Invoke();
 	}
 
+	// MSG
 	private static void Init () {
 #if DEBUG
 		Console.Clear();
@@ -78,6 +85,7 @@ public static class Flow {
 
 		// Setup Window
 		var assembly = Assembly.GetExecutingAssembly();
+		string assemblyName = assembly.GetName().Name;
 		int monitor = Raylib.GetCurrentMonitor();
 		int monitorW = Raylib.GetMonitorWidth(monitor);
 		int monitorH = Raylib.GetMonitorHeight(monitor);
@@ -98,7 +106,7 @@ public static class Flow {
 		Raylib.SetWindowFocused();
 
 		// Resource
-		using (var stream = assembly.GetManifestResourceStream($"{assembly.GetName().Name}.Icon.png")) {
+		using (var stream = assembly.GetManifestResourceStream($"{assemblyName}.res.Icon.png")) {
 			if (stream != null) {
 				using var reader = new BinaryReader(stream);
 				var pngBytes = reader.ReadBytes((int)stream.Length);
@@ -107,21 +115,67 @@ public static class Flow {
 				Raylib.UnloadImage(img);
 			}
 		}
-		DefaultFont = Raylib.GetFontDefault();
 
+		// Embedded Font
+		byte[] FontBytes = null;
+		using (var stream = assembly.GetManifestResourceStream($"{assemblyName}.res.Font.ttf")) {
+			using var reader = new BinaryReader(stream);
+			FontBytes = reader.ReadBytes((int)stream.Length);
+		}
+
+		// GUI Setup
+		rlImGui.Setup(darkTheme: true, enableDocking: false);
+
+		// Init Font
+		var ImGuiContext = ImGui.CreateContext();
+		ImGui.SetCurrentContext(ImGuiContext);
+		var io = ImGui.GetIO();
+		unsafe {
+			fixed (byte* p = FontBytes) {
+				MainFontPtr = io.Fonts.AddFontFromMemoryTTF(
+					(nint)p, FontBytes.Length, 32, default, io.Fonts.GetGlyphRangesDefault()
+				);
+			}
+			FontBytes = null;
+			io.Fonts.GetTexDataAsRGBA32(out byte* out_pixels, out int out_width, out int out_height, out int _);
+			Image image = default;
+			image.Data = out_pixels;
+			image.Width = out_width;
+			image.Height = out_height;
+			image.Mipmaps = 1;
+			image.Format = PixelFormat.UncompressedR8G8B8A8;
+			var FontTexture = Raylib.LoadTextureFromImage(image);
+			io.Fonts.SetTexID(new IntPtr(FontTexture.Id));
+		}
+
+		// Final
+		GC.Collect();
 	}
 
 	private static void Loop (Action update) {
 		while (!Raylib.WindowShouldClose()) {
 			if (!Raylib.IsWindowMinimized()) {
 				Raylib.BeginDrawing();
-				update?.Invoke();
+				Raylib.ClearBackground(new Color(12, 12, 12));
+				rlImGui.Begin();
+				ImGui.Begin("Main", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoResize);
+				const int WIN_PADDING = 20;
+				try {
+					ImGui.SetWindowPos(new(WIN_PADDING, WIN_PADDING));
+					ImGui.SetWindowSize(new(WindowWidth - WIN_PADDING * 2, WindowHeight - WIN_PADDING * 2));
+					ImGui.SetWindowFontScale(2f);
+					using var _ = new FontScope(MainFontPtr);
+					update?.Invoke();
+				} catch (Exception ex) { Debug.LogError(ex); }
+				ImGui.End();
+				rlImGui.End();
 			}
 			Raylib.EndDrawing();
 		}
 	}
 
 	private static void Quit () {
+		rlImGui.Shutdown();
 		Raylib.CloseAudioDevice();
 		string path = CombinePaths(SavingFolder, "Config.txt");
 		var builder = new StringBuilder();

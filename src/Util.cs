@@ -139,6 +139,8 @@ static partial class Util {
 
 	public static long GetCurrentFileTime () => System.DateTime.UtcNow.ToFileTimeUtc();
 
+	public static bool NotEnd (this BinaryReader reader) => reader.BaseStream.Position < reader.BaseStream.Length;
+
 	// Path
 	public static string GetParentPath (string path) {
 		if (string.IsNullOrEmpty(path)) return "";
@@ -185,5 +187,82 @@ static partial class Util {
 		return name;
 	}
 
+	public static bool TryGetRelativePath (string relativeTo, string path, out string relativePath) {
+		try {
+			relativePath = Path.GetRelativePath(relativeTo, path);
+			return true;
+		} catch (System.Exception ex) { Debug.LogException(ex); }
+		relativePath = "";
+		return false;
+	}
+
+	public static string ChangeExtension (string path, string newEx) => Path.ChangeExtension(path, newEx);//txt or .txt
+
+	// AngeliA Hash Code
+	public static string AngeName (this System.Type type) {
+		string name = type.IsNested ? $"{type.DeclaringType.Name}.{type.Name}" : type.Name;
+		if (char.IsLower(name[0])) name = name[1..];
+		return name;
+	}
+
+	public static int AngeHash (this System.Type type) => type.AngeName().AngeHash();
+
+	public static int AngeHash (this string str) {
+		const int p = 31;
+		const int m = 1837465129;
+		int hash_value = 0;
+		int p_pow = 1;
+		for (int i = 0; i < str.Length; i++) {
+			char c = str[i];
+			hash_value = (hash_value + (c - 'a' + 1) * p_pow) % m;
+			p_pow = (p_pow * p) % m;
+		}
+		return hash_value == 0 ? 1 : hash_value;
+	}
+
+	public static int AngeHash (this string str, int start, int length) {
+		const int p = 31;
+		const int m = 1837465129;
+		int hash_value = 0;
+		int p_pow = 1;
+		int end = start + length;
+		int arrLen = str.Length;
+		for (int i = start; i < end; i++) {
+			char c = str[i % arrLen];
+			hash_value = (hash_value + (c - 'a' + 1) * p_pow) % m;
+			p_pow = (p_pow * p) % m;
+		}
+		return hash_value == 0 ? 1 : hash_value;
+	}
+
+	public static int AngeHash (this char[] arr, int start, int length) {
+		const int p = 31;
+		const int m = 1837465129;
+		int hash_value = 0;
+		int p_pow = 1;
+		int end = start + length;
+		int arrLen = arr.Length;
+		for (int i = start; i < end; i++) {
+			char c = arr[i % arrLen];
+			hash_value = (hash_value + (c - 'a' + 1) * p_pow) % m;
+			p_pow = (p_pow * p) % m;
+		}
+		return hash_value == 0 ? 1 : hash_value;
+	}
+
+	public static int AngeReverseHash (this char[] arr, int start, int length) {
+		const int p = 31;
+		const int m = 1837465129;
+		int hash_value = 0;
+		int p_pow = 1;
+		int end = start + length;
+		int arrLen = arr.Length;
+		for (int i = end - 1; i >= start; i--) {
+			char c = arr[i % arrLen];
+			hash_value = (hash_value + (c - 'a' + 1) * p_pow) % m;
+			p_pow = (p_pow * p) % m;
+		}
+		return hash_value == 0 ? 1 : hash_value;
+	}
 
 }

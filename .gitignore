@@ -4,5 +4,5 @@ obj/
 bin/
 *.vsconfig
 *.editorconfig
-*.ini
+.ini
 Build
