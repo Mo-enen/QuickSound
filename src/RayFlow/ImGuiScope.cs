@@ -6,9 +6,20 @@ using System.Numerics;
 
 namespace RayFlow;
 
-public readonly struct DisableScope : IDisposable {
-	public DisableScope () => ImGui.BeginDisabled();
-	public void Dispose () => ImGui.EndDisabled();
+public readonly struct EnableScope : IDisposable {
+	private readonly bool Enable;
+	public EnableScope () : this(true) { }
+	public EnableScope (bool enable) {
+		Enable = enable;
+		if (!enable) {
+			ImGui.BeginDisabled();
+		}
+	}
+	public void Dispose () {
+		if (!Enable) {
+			ImGui.EndDisabled();
+		}
+	}
 }
 
 
@@ -48,8 +59,15 @@ public readonly struct FontScope : IDisposable {
 
 
 public readonly struct StyleColorScope : IDisposable {
-	public StyleColorScope () : this(default, default) { }
+	public StyleColorScope () : this(default, GuiColor.White) { }
+	public StyleColorScope (ImGuiCol col, GuiColor color) => ImGui.PushStyleColor(col, color.ToVec4());
 	public StyleColorScope (ImGuiCol col, Vector4 value) => ImGui.PushStyleColor(col, value);
 	public void Dispose () => ImGui.PopStyleColor();
 }
 
+
+public readonly struct StyleScope : IDisposable {
+	public StyleScope (ImGuiStyleVar var, float value) => ImGui.PushStyleVar(var, value);
+	public StyleScope (ImGuiStyleVar var, Vector2 value) => ImGui.PushStyleVar(var, value);
+	public void Dispose () => ImGui.PopStyleVar();
+}

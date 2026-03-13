@@ -138,7 +138,7 @@ public static class Flow {
 		unsafe {
 			fixed (byte* p = FontBytes) {
 				MainFontPtr = io.Fonts.AddFontFromMemoryTTF(
-					(nint)p, FontBytes.Length, 32, default, io.Fonts.GetGlyphRangesDefault()
+					(nint)p, FontBytes.Length, 48, default, io.Fonts.GetGlyphRangesDefault()
 				);
 			}
 			FontBytes = null;
@@ -163,20 +163,30 @@ public static class Flow {
 				Raylib.BeginDrawing();
 				Raylib.ClearBackground(new Color(12, 12, 12));
 				rlImGui.Begin();
-				ImGui.Begin("Main", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoResize);
-				const int WIN_PADDING = 20;
+				ImGui.Begin(
+					"Main",
+					ImGuiWindowFlags.NoCollapse |
+					ImGuiWindowFlags.NoDecoration |
+					ImGuiWindowFlags.NoDocking |
+					ImGuiWindowFlags.NoMove |
+					ImGuiWindowFlags.NoBackground |
+					ImGuiWindowFlags.NoSavedSettings |
+					ImGuiWindowFlags.NoResize |
+					ImGuiWindowFlags.NoScrollbar |
+					ImGuiWindowFlags.NoScrollWithMouse
+				);
 				try {
 					WindowWidth = Raylib.GetScreenWidth();
 					WindowHeight = Raylib.GetScreenHeight();
 					using var _ = new FontScope(MainFontPtr);
-					window.Width = WindowWidth - WIN_PADDING * 2;
-					window.Height = WindowHeight - WIN_PADDING * 2;
-					ImGui.SetWindowPos(new(WIN_PADDING, WIN_PADDING));
+					window.Width = WindowWidth - window.WindowPadding * 2;
+					window.Height = WindowHeight - window.WindowPadding * 2;
+					ImGui.SetWindowPos(new(window.WindowPadding, window.WindowPadding));
 					ImGui.SetWindowSize(new(window.Width, window.Height));
-					ImGui.SetWindowFontScale(2f);
-					window.RequireCursor = MouseCursor.Default;
+					ImGui.SetWindowFontScale(1f);
+					GUI.RequireCursor = MouseCursor.Default;
 					window.Update();
-					Raylib.SetMouseCursor(window.RequireCursor);
+					Raylib.SetMouseCursor(GUI.RequireCursor);
 				} catch (Exception ex) { Debug.LogError(ex); }
 				ImGui.End();
 				rlImGui.End();
