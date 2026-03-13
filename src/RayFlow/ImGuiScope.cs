@@ -30,9 +30,20 @@ public readonly struct GroupScope : IDisposable {
 
 
 public readonly struct ChildScope : IDisposable {
-	public ChildScope () : this(default) { }
-	public ChildScope (uint id) => ImGui.BeginChild(id);
-	public void Dispose () => ImGui.EndChild();
+	private readonly bool Success;
+	public static uint DynamicID;
+	public ChildScope () : this(0f, 0f, 42f, 6f) { }
+	public ChildScope (float width, float height, float scrollBarSize = 42, float scrollbarRounding = 6) {
+		using var a = new StyleScope(ImGuiStyleVar.ScrollbarRounding, scrollbarRounding);
+		using var b = new StyleScope(ImGuiStyleVar.ScrollbarSize, scrollBarSize);
+		Success = ImGui.BeginChild(DynamicID, new Vector2(width, height));
+		DynamicID++;
+	}
+	public void Dispose () {
+		if (Success) {
+			ImGui.EndChild();
+		}
+	}
 }
 
 

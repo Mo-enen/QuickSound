@@ -77,7 +77,6 @@ public class Window : FlowWindow {
 		Update_Toolbar();
 		ImGui.Spacing();
 		Update_SearchResult();
-		Update_Scrollbar();
 	}
 
 
@@ -119,41 +118,28 @@ public class Window : FlowWindow {
 		}
 
 		// Top Bar
-
-
-		// Result List
-		ImGui.BeginChild("##", new Vector2(0, 0));
-		for (int i = 0; i < SearchResults.Count; i++) {
-			var line = SearchResults[i];
-
-			GUI.Label(line.BaseName, 0);
-
-			ImGui.SameLine(512);
-			GUI.Label(line.Name, 0);
-
-			ImGui.SameLine(1024);
-			GUI.Label("(Wave)", 0);
+		using (new ChildScope(0, 56)) {
 
 		}
-		GUI.Label("", 0);
-		GUI.Label("", 0);
-		GUI.Label("", 0);
 
-		// Speed Up Scroll
-		float scrollY = ImGui.GetScrollY();
-		scrollY -= Raylib.GetMouseWheelMove() * 320;
-		ImGui.SetScrollY(scrollY);
+		// Result List
+		using (new ChildScope(0, 0, 96, 6)) {
+			for (int i = 0; i < SearchResults.Count; i++) {
+				var line = SearchResults[i];
 
-		ImGui.EndChild();
-	}
+				GUI.Label(line.BaseName, 0);
 
+				ImGui.SameLine(512);
+				GUI.Label(line.Name, 0);
 
-	private void Update_Scrollbar () {
+				ImGui.SameLine(1024);
+				GUI.Label("(Wave)", 0);
 
-
-
-
-
+			}
+			GUI.Label("", 0);
+			GUI.Label("", 0);
+			GUI.Label("", 0);
+		}
 
 	}
 

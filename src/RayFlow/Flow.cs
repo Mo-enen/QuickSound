@@ -24,10 +24,9 @@ public static class Flow {
 	// API
 	public static void Run () {
 		if (GetWindow() is not FlowWindow window) return;
-		Init(window.SavingFolder);
-		window.Start();
+		Init(window);
 		Loop(window);
-		Quit(window.SavingFolder);
+		Quit(window);
 		window.Quit();
 	}
 
@@ -44,11 +43,12 @@ public static class Flow {
 		return null;
 	}
 
-	private static void Init (string savingFolder) {
+	private static void Init (FlowWindow window) {
 #if DEBUG
 		Console.Clear();
 #endif
 		// Load Config
+		string savingFolder = window.SavingFolder;
 		string path = CombinePaths(savingFolder, "Config.txt");
 		CreateFolder(savingFolder);
 		foreach (string line in ForAllLinesInFile(path)) {
@@ -154,14 +154,29 @@ public static class Flow {
 		}
 
 		// Final
+		window.Start();
 		GC.Collect();
+
 	}
 
 	private static void Loop (FlowWindow window) {
 		while (!Raylib.WindowShouldClose()) {
 			if (!Raylib.IsWindowMinimized()) {
+				ChildScope.DynamicID = 1;
+				// Event Waiting
+				if (
+					window.RequireAlwaysUpdate ||
+					Raylib.IsMouseButtonDown(MouseButton.Left) ||
+					Raylib.IsMouseButtonDown(MouseButton.Right) ||
+					Raylib.IsMouseButtonDown(MouseButton.Middle)
+				) {
+					Raylib.DisableEventWaiting();
+				} else {
+					Raylib.EnableEventWaiting();
+				}
+				// Begin Draw
 				Raylib.BeginDrawing();
-				Raylib.ClearBackground(new Color(12, 12, 12));
+				Raylib.ClearBackground(window.BackgroundColor);
 				rlImGui.Begin();
 				ImGui.Begin(
 					"Main",
@@ -195,10 +210,10 @@ public static class Flow {
 		}
 	}
 
-	private static void Quit (string savingFolder) {
+	private static void Quit (FlowWindow window) {
 		rlImGui.Shutdown();
 		Raylib.CloseAudioDevice();
-		string path = CombinePaths(savingFolder, "Config.txt");
+		string path = CombinePaths(window.SavingFolder, "Config.txt");
 		var builder = new StringBuilder();
 		if (!Raylib.IsWindowMinimized()) {
 			builder.AppendLine($"WindowX:{Raylib.GetWindowPosition().X}");
