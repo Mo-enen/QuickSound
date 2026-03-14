@@ -9,7 +9,6 @@ public abstract class FlowWindow {
 
 	// VAR
 	public abstract string DeveloperName { get; }
-	public virtual bool RequireAlwaysUpdate => false;
 	public virtual int WindowPadding => 42;
 	public virtual Color BackgroundColor => new Color(12, 12, 12, 255);
 

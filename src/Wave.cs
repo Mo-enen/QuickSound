@@ -49,7 +49,7 @@ public class Wave {
 	}
 
 
-	public static unsafe bool CreateWavForAudioFile (string audioFilePath, string waveFilePath, out Wave result) {
+	public static unsafe bool CreateWavForAudioFile (string audioFilePath, string waveFilePath, long date, out Wave result) {
 
 		result = null;
 		if (!Util.FileExists(audioFilePath)) return false;
@@ -109,6 +109,7 @@ public class Wave {
 		} catch (System.Exception ex) { Debug.LogException(ex); }
 
 		// Final
+		Util.SetFileCreateDate(waveFilePath, date);
 		Raylib.UnloadWaveSamples(samples);
 		Raylib.UnloadWave(wave);
 		return true;

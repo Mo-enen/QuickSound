@@ -110,37 +110,45 @@ static partial class Util {
 	// File-Date
 	public static long GetFileModifyDate (string path) {
 		if (!FileExists(path)) return 0;
-		return File.GetLastWriteTime(path).ToFileTimeUtc();
+		return File.GetLastWriteTimeUtc(path).ToFileTimeUtc();
 	}
 
 	public static long GetFolderModifyDate (string path) {
 		if (!FolderExists(path)) return 0;
-		return Directory.GetLastWriteTime(path).ToFileTimeUtc();
+		return Directory.GetLastWriteTimeUtc(path).ToFileTimeUtc();
 	}
 
 	public static void SetFolderModifyDate (string path, long fileTime) {
 		if (!FolderExists(path)) return;
-		Directory.SetLastWriteTime(path, System.DateTime.FromFileTimeUtc(fileTime));
+		Directory.SetLastWriteTimeUtc(path, System.DateTime.FromFileTimeUtc(fileTime));
 	}
 
 	public static long GetFileCreationDate (string path) {
 		if (!FileExists(path)) return 0;
-		return File.GetCreationTime(path).ToFileTimeUtc();
+		return File.GetCreationTimeUtc(path).ToFileTimeUtc();
 	}
 
 	public static long GetFolderCreationDate (string path) {
 		if (!FolderExists(path)) return 0;
-		return Directory.GetCreationTime(path).ToFileTimeUtc();
+		return Directory.GetCreationTimeUtc(path).ToFileTimeUtc();
 	}
 
 	public static void SetFileModifyDate (string path, long fileTime) {
 		if (!FileExists(path)) return;
-		File.SetLastWriteTime(path, System.DateTime.FromFileTime(fileTime));
+		File.SetLastWriteTimeUtc(path, System.DateTime.FromFileTimeUtc(fileTime));
 	}
 
-	public static long GetCurrentFileTime () => System.DateTime.UtcNow.ToFileTimeUtc();
+	public static void SetFileCreateDate (string path, long fileTime) {
+		if (!FileExists(path)) return;
+		File.SetCreationTimeUtc(path, System.DateTime.FromFileTimeUtc(fileTime));
+	}
 
+	public static long GetCurrentFileTimeUtc () => System.DateTime.UtcNow.ToFileTimeUtc();
+
+	// Misc
 	public static bool NotEnd (this BinaryReader reader) => reader.BaseStream.Position < reader.BaseStream.Length;
+
+	public static string GetEnvironmentVariable (string key, EnvironmentVariableTarget target) => Environment.GetEnvironmentVariable(key, target);
 
 	// Path
 	public static string GetParentPath (string path) {

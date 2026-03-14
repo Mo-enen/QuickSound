@@ -83,6 +83,7 @@ public static class Flow {
 		Raylib.SetTargetFPS(48);
 		Raylib.InitAudioDevice();
 		Raylib.SetExitKey(Raylib_cs.KeyboardKey.Null);
+		Raylib.DisableEventWaiting();
 		Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
 #if DEBUG
 		DevUtil.Debug_OnAppStart();
@@ -162,18 +163,6 @@ public static class Flow {
 	private static void Loop (FlowWindow window) {
 		while (!Raylib.WindowShouldClose()) {
 			if (!Raylib.IsWindowMinimized()) {
-				ChildScope.DynamicID = 1;
-				// Event Waiting
-				if (
-					window.RequireAlwaysUpdate ||
-					Raylib.IsMouseButtonDown(MouseButton.Left) ||
-					Raylib.IsMouseButtonDown(MouseButton.Right) ||
-					Raylib.IsMouseButtonDown(MouseButton.Middle)
-				) {
-					Raylib.DisableEventWaiting();
-				} else {
-					Raylib.EnableEventWaiting();
-				}
 				// Begin Draw
 				Raylib.BeginDrawing();
 				Raylib.ClearBackground(window.BackgroundColor);
@@ -190,6 +179,7 @@ public static class Flow {
 					ImGuiWindowFlags.NoScrollbar |
 					ImGuiWindowFlags.NoScrollWithMouse
 				);
+				GUI.Begin();
 				try {
 					WindowWidth = Raylib.GetScreenWidth();
 					WindowHeight = Raylib.GetScreenHeight();

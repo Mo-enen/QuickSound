@@ -33,11 +33,20 @@ public static class WavePool {
 				while (WaveRequiring.TryDequeue(out var requirData)) {
 					var (pathID, audioPath) = requirData;
 					string dataPath = Wave.GetWaveDataPath(audioPath);
+					long audioDate = Util.GetFileModifyDate(audioPath);
 					if (Util.FileExists(dataPath)) {
-						var wave = new Wave();
-						wave.LoadFromFile(dataPath);
-						Pool[pathID] = wave;
-					} else if (Wave.CreateWavForAudioFile(audioPath, dataPath, out var wave)) {
+						long dataDate = Util.GetFileCreationDate(dataPath);
+						if (audioDate == dataDate) {
+							// Load From File
+							var wave = new Wave();
+							wave.LoadFromFile(dataPath);
+							Pool[pathID] = wave;
+						} else if (Wave.CreateWavForAudioFile(audioPath, dataPath, audioDate, out var wave)) {
+							// Override New
+							Pool[pathID] = wave;
+						}
+					} else if (Wave.CreateWavForAudioFile(audioPath, dataPath, audioDate, out var wave)) {
+						// Create New
 						Pool[pathID] = wave;
 					}
 				}
