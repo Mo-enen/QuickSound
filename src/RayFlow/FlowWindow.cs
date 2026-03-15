@@ -24,5 +24,6 @@ public abstract class FlowWindow {
 	public abstract void Start ();
 	public abstract void Update ();
 	public abstract void Quit ();
+	public virtual void OnFileDropped (string[] paths) { }
 
 }

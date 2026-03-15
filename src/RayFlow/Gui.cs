@@ -10,52 +10,86 @@ namespace RayFlow;
 
 public enum GuiColor {
 	Clear, White, WhiteAlmost, DarkWhite, LightGrey, Grey, DarkGrey, BlackAlmost, Black,
-	Red, Orange, Yellow, OliveYellow, Green, AzureGreen, Cyan, VividCyan, Blue, Purple, Pink, LotusPink,
+	Red, Orange, Yellow, OliveYellow, Green, DarkGreen, AzureGreen, Cyan, VividCyan, Blue, Purple, Pink, LotusPink,
 }
 
 
 public static class GUI {
 
 
-	// VAR
+	// Api
 	public static MouseCursor RequireCursor { get; set; } = MouseCursor.Default;
-	public static int ButtonDynamicID;
-	public static bool MouseLeftDown;
-	public static Vector2 PrevMouseLeftDownPos;
-	public static Vector2 MousePos;
-	private static bool PrevMouseLeftDown;
+	public static int ButtonDynamicID { get; set; }
+	public static Vector2 MousePos { get; set; }
+	public static bool MouseLeftHolding { get; set; } = false;
+	public static bool MouseRightHolding { get; set; } = false;
+	public static bool MouseMidHolding { get; set; } = false;
+	public static bool MouseLeftDown { get; set; } = false;
+	public static bool MouseRightDown { get; set; } = false;
+	public static bool MouseMidDown { get; set; } = false;
+	public static Vector2 MouseLeftDownPos { get; set; }
+	public static Vector2 MouseRightDownPos { get; set; }
+	public static Vector2 MouseMidDownPos { get; set; }
+
+	// Data
+	private static bool PrevMouseLeftHolding;
+	private static bool PrevMouseRightHolding;
+	private static bool PrevMouseMidHolding;
 
 
 	// MSG
 	internal static void Begin () {
 		ButtonDynamicID = 1;
 		ChildScope.DynamicID = 1;
-		PrevMouseLeftDown = MouseLeftDown;
-		MouseLeftDown = ImGui.IsMouseDown(ImGuiMouseButton.Left);
+		PrevMouseLeftHolding = MouseLeftHolding;
+		PrevMouseRightHolding = MouseRightHolding;
+		PrevMouseMidHolding = MouseMidHolding;
+		MouseLeftHolding = ImGui.IsMouseDown(ImGuiMouseButton.Left);
+		MouseRightHolding = ImGui.IsMouseDown(ImGuiMouseButton.Right);
+		MouseMidHolding = ImGui.IsMouseDown(ImGuiMouseButton.Middle);
 		MousePos = ImGui.GetMousePos();
-		if (MouseLeftDown && !PrevMouseLeftDown) {
-			PrevMouseLeftDownPos = MousePos;
+		MouseLeftDown = false;
+		MouseRightDown = false;
+		MouseMidDown = false;
+		if (MouseLeftHolding && !PrevMouseLeftHolding) {
+			MouseLeftDownPos = MousePos;
+			MouseLeftDown = true;
+		}
+		if (MouseRightHolding && !PrevMouseRightHolding) {
+			MouseRightDownPos = MousePos;
+			MouseRightDown = true;
+		}
+		if (MouseMidHolding && !PrevMouseMidHolding) {
+			MouseMidDownPos = MousePos;
+			MouseMidDown = true;
 		}
 	}
 
 
 	// API
-	public static bool Button (string label, float? width = null, float? height = null, GuiColor bodyColor = GuiColor.VividCyan, GuiColor labelColor = GuiColor.WhiteAlmost, bool interactable = true) {
-		using var a = new StyleColorScope(ImGuiCol.Button, interactable ? bodyColor.ToVec4() : bodyColor.Grey(0.3f));
-		using var b = new StyleColorScope(ImGuiCol.ButtonHovered, interactable ? bodyColor.Mult(0.95f) : bodyColor.Grey(0.3f));
-		using var c = new StyleColorScope(ImGuiCol.ButtonActive, interactable ? bodyColor.Mult(0.9f) : bodyColor.Grey(0.3f));
-		using var d = new StyleColorScope(ImGuiCol.Text, interactable ? labelColor.ToVec4() : labelColor.Grey(0.3f));
-		using var e = new EnableScope(interactable);
+	public static bool Button (string label, float? width = null, float? height = null, GuiColor bodyColor = GuiColor.VividCyan, GuiColor labelColor = GuiColor.WhiteAlmost, bool enable = true, bool returnHolding = false) => Button(label, out _, width, height, bodyColor, labelColor, enable, returnHolding);
+	public static bool Button (string label, out bool clicked, float? width = null, float? height = null, GuiColor bodyColor = GuiColor.VividCyan, GuiColor labelColor = GuiColor.WhiteAlmost, bool enable = true, bool returnHolding = false) {
+		using var a = new StyleColorScope(ImGuiCol.Button, bodyColor);
+		using var b = new StyleColorScope(ImGuiCol.ButtonHovered, bodyColor.Mult(0.95f));
+		using var c = new StyleColorScope(ImGuiCol.ButtonActive, bodyColor.Mult(0.9f));
+		using var d = new StyleColorScope(ImGuiCol.Text, labelColor);
+		using var e = new EnableScope(enable);
 		using var f = new IdScope(ButtonDynamicID);
 		using var g = new StyleScope(ImGuiStyleVar.FrameRounding, 4f);
 		ButtonDynamicID++;
 		width ??= 0f;
 		height ??= 0f;
 		bool result = false;
-		ImGui.Button(label, new Vector2(width.Value, height.Value));
-		if (ImGui.IsItemHovered()) {
+		clicked = ImGui.Button(label, new Vector2(width.Value, height.Value));
+		var min = ImGui.GetItemRectMin();
+		var max = ImGui.GetItemRectMax();
+		var dPos = MouseLeftDownPos;
+		if (
+			ImGui.IsItemHovered() ||
+			(MouseLeftHolding && dPos.X > min.X && dPos.X <= max.X && dPos.Y > min.Y && dPos.Y <= max.Y)
+		) {
 			RequireCursor = MouseCursor.PointingHand;
-			result = !PrevMouseLeftDown && MouseLeftDown;
+			result = returnHolding ? MouseLeftHolding : !PrevMouseLeftHolding && MouseLeftHolding;
 		}
 		return result;
 	}
@@ -70,6 +104,7 @@ public static class GUI {
 		using var _ = new StyleColorScope(ImGuiCol.Text, color);
 		using var __ = new StyleColorScope(ImGuiCol.FrameBg, bodyColor.Mult(0.4f));
 		using var ___ = new StyleScope(ImGuiStyleVar.FrameRounding, 4f);
+		using var ____ = new StyleScope(ImGuiStyleVar.FramePadding, new Vector2(16f, 0f));
 		if (string.IsNullOrEmpty(label)) label = "##";
 		ImGui.SetNextItemWidth(-256);
 		ImGui.SetNextItemWidth(width);
@@ -114,8 +149,9 @@ public static class GUI {
 		GuiColor.Orange => new(1, 0.5f, 0, 1f),
 		GuiColor.Yellow => new(1, 1, 0, 1f),
 		GuiColor.OliveYellow => new(0.5f, 1, 0, 1f),
+		GuiColor.DarkGreen => new(0, 0.5f, 0, 1f),
 		GuiColor.Green => new(0, 1, 0, 1f),
-		GuiColor.AzureGreen => new(0, 1, 0.5f, 1f),
+		GuiColor.AzureGreen => new(0, 0.8f, 0.5f, 1f),
 		GuiColor.Cyan => new(0, 1, 1, 1f),
 		GuiColor.VividCyan => new(0, 0.5f, 1, 1f),
 		GuiColor.Blue => new(0, 0, 1, 1f),

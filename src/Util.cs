@@ -274,4 +274,17 @@ static partial class Util {
 		return hash_value == 0 ? 1 : hash_value;
 	}
 
+	public static long SuperAngeHash (this string str) {
+		const long p = 63;
+		const long m = 183746512974625348;
+		long hash_value = 0;
+		long p_pow = 1;
+		for (int i = 0; i < str.Length; i++) {
+			char c = str[i];
+			hash_value = (hash_value + (c - 'a' + 1) * p_pow) % m;
+			p_pow = (p_pow * p) % m;
+		}
+		return hash_value == 0 ? 1 : hash_value;
+	}
+
 }

@@ -165,6 +165,9 @@ public static class Flow {
 			if (!Raylib.IsWindowMinimized()) {
 				// Begin Draw
 				Raylib.BeginDrawing();
+				if (Raylib.IsFileDropped()) {
+					window.OnFileDropped(Raylib.GetDroppedFiles());
+				}
 				Raylib.ClearBackground(window.BackgroundColor);
 				rlImGui.Begin();
 				ImGui.Begin(

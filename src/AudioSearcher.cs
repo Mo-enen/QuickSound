@@ -12,6 +12,8 @@ public class SearchResultLine {
 	public string Name;
 	public string Path;
 	public int PathID;
+	public float StartTime01;
+	public float EndTime01;
 	public SearchResultLine (string path, string audioRootPath) {
 		Path = path;
 		PathID = path.AngeHash();
@@ -21,6 +23,8 @@ public class SearchResultLine {
 		} else {
 			BaseName = Util.GetParentPath(Path);
 		}
+		StartTime01 = 0f;
+		EndTime01 = 1f;
 	}
 }
 
@@ -28,13 +32,39 @@ public class SearchResultLine {
 
 public class AudioSearcher {
 
-	// VAR
+
+	// Api
+	public readonly List<SearchResultLine> SearchResults = [];
+	public bool Imported { get; private set; } = false;
+	public bool Importing { get; private set; } = false;
+	public int ImportPathCount { get; private set; } = 0;
+	public string LastImportedPath { get; private set; } = "";
+	public string AudioRootPath { get; private set; } = "";
+
+	// Data
 	private int SearchStamp = 0;
 	private string[] SearchPatterns = null;
-	public readonly List<SearchResultLine> SearchResults = [];
 
-	// MSG
-	public void PerformSearch (string searchingText, string audioRootPath) {
+	// API
+	public void ImportAsync (string audioRoot, bool forceImport) {
+		if (Importing) return;
+		Imported = false;
+		AudioRootPath = audioRoot;
+		SearchResults.Clear();
+		SearchStamp++;
+		if (forceImport) {
+
+			// TODO
+			// Remove Cache File
+
+		}
+		Task.Run(BackgroundImport);
+	}
+
+	public void PerformSearch (string searchingText) {
+
+		if (!Imported) return;
+		if (string.IsNullOrEmpty(AudioRootPath)) return;
 
 		searchingText ??= "";
 
@@ -45,23 +75,39 @@ public class AudioSearcher {
 
 		/////////////////////////////
 
-		string testA = @"D:\C#\QuickSound\Build\Test Audio\8-Bit Adventure\LOOP_Chaos Powerhouse.wav";
-		string testB = @"D:\C#\QuickSound\Build\Test Audio\8-Bit Adventure\LOOP_Feel-Good Victory.wav";
-		string testC = @"D:\C#\QuickSound\Build\Test Audio\8-Bit Adventure\LOOP_Mysterious Cave.wav";
-		string testD = @"D:\C#\QuickSound\Build\Test Audio\99 Sound Effects\Drone - Alien VHS.wav";
-		string testE = @"D:\C#\QuickSound\Build\Test Audio\99 Sound Effects\Drone - Ocean Cave.wav";
-		string testF = @"D:\C#\QuickSound\Build\Test Audio\99 Sound Effects\Impact - Cease Fire.wav";
-		string testG = @"D:\C#\QuickSound\Build\Test Audio\99 Sound Effects\Impact - Jaw Breaker.wav";
-		SearchResults.Add(new SearchResultLine(testA, audioRootPath));
-		SearchResults.Add(new SearchResultLine(testB, audioRootPath));
-		SearchResults.Add(new SearchResultLine(testC, audioRootPath));
-		SearchResults.Add(new SearchResultLine(testD, audioRootPath));
-		SearchResults.Add(new SearchResultLine(testE, audioRootPath));
-		SearchResults.Add(new SearchResultLine(testF, audioRootPath));
-		SearchResults.Add(new SearchResultLine(testG, audioRootPath));
+		string testA = @"E:\Audio\8-Bit Adventure\LOOP_Chaos Powerhouse.wav";
+		string testB = @"E:\Audio\8-Bit Adventure\LOOP_Feel-Good Victory.wav";
+		string testC = @"E:\Audio\8-Bit Adventure\LOOP_Mysterious Cave.wav";
+		string testD = @"E:\Audio\99 Sound Effects\WAV\Drone - Alien VHS.wav";
+		string testE = @"E:\Audio\99 Sound Effects\WAV\Drone - Ocean Cave.wav";
+		string testF = @"E:\Audio\99 Sound Effects\WAV\Impact - Cease Fire.wav";
+		string testG = @"E:\Audio\99 Sound Effects\WAV\Impact - Jaw Breaker.wav";
+		SearchResults.Add(new SearchResultLine(testA, AudioRootPath));
+		SearchResults.Add(new SearchResultLine(testB, AudioRootPath));
+		SearchResults.Add(new SearchResultLine(testC, AudioRootPath));
+		SearchResults.Add(new SearchResultLine(testD, AudioRootPath));
+		SearchResults.Add(new SearchResultLine(testE, AudioRootPath));
+		SearchResults.Add(new SearchResultLine(testF, AudioRootPath));
+		SearchResults.Add(new SearchResultLine(testG, AudioRootPath));
 
 		/////////////////////////////
 
+	}
+
+	// LGC
+	private void BackgroundImport () {
+		Importing = true;
+		ImportPathCount = 0;
+		try {
+
+
+
+
+			// Final
+			Imported = true;
+			PerformSearch("");
+		} catch (System.Exception ex) { Debug.LogException(ex); }
+		Importing = false;
 	}
 
 	private void BackgroundSearch () {
@@ -70,10 +116,10 @@ public class AudioSearcher {
 
 
 
-		// Change Check
-		if (stamp != SearchStamp) {
 
-		}
+		// Change Check
+		if (stamp != SearchStamp) return;
+
 
 		// Search
 
@@ -81,5 +127,6 @@ public class AudioSearcher {
 
 
 	}
+
 
 }

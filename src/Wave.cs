@@ -118,9 +118,8 @@ public class Wave {
 
 	public static string GetWaveDataPath (string audioFilePath) {
 		if (audioFilePath.Length <= 2 || audioFilePath[1] != ':') return "";
-		audioFilePath = audioFilePath.Remove(1, 1);
-		audioFilePath = Util.ChangeExtension(audioFilePath, "").TrimEnd('.');
-		return Util.CombinePaths(WaveCacheRoot, audioFilePath);
+		long superHash = audioFilePath.SuperAngeHash();
+		return Util.CombinePaths(WaveCacheRoot, superHash.ToString());
 	}
 
 
