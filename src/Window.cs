@@ -32,6 +32,7 @@ public class Window : FlowWindow {
 	private int DraggingEdgeIndex = 0;
 	private bool Dragged = false;
 	private float DraggingEdgeOffsetX;
+	private int MusicPathID;
 
 	// Setting
 	private string AudioRootPath = "";
@@ -92,6 +93,7 @@ public class Window : FlowWindow {
 		)) {
 			Searcher.ImportAsync(AudioRootPath, forceImport: true);
 			SelectingIndex = -1;
+			StopMusic();
 		}
 		ImGui.Dummy(new(0, 8));
 
@@ -117,6 +119,7 @@ public class Window : FlowWindow {
 				bodyColor: expEnable ? GuiColor.DarkGreen : GuiColor.DarkGrey,
 				enable: expEnable
 			)) {
+				StopMusic();
 				ExportCurrentAudio();
 			}
 
@@ -134,6 +137,7 @@ public class Window : FlowWindow {
 			ImGui.SameLine(labelW);
 			bool endEdit = GUI.Input("##Search", ref SearchingText, width: -BTN_W);
 			if (SearchingInputActive && !endEdit) {
+				StopMusic();
 				Searcher.PerformSearch(SearchingText);
 				SelectingIndex = -1;
 			}
@@ -172,8 +176,19 @@ public class Window : FlowWindow {
 		const float ITEM_H = 64;
 		const float ITEM_PADDING = 24;
 		const float WAVE_BORD = 4;
+		bool anyClick = false;
 		if (!GUI.MouseLeftHolding) {
 			DraggingEdgeIndex = 0;
+		}
+
+		// Mid Click
+		var music = Flow.Music;
+		if (
+			GUI.MouseMidDown &&
+			Raylib.IsMusicValid(music) &&
+			Raylib.IsMusicStreamPlaying(music)
+		) {
+			Raylib.StopMusicStream(music);
 		}
 
 		// Top Bar
@@ -234,16 +249,42 @@ public class Window : FlowWindow {
 			// Wave Press
 			if (waveDragging) {
 				SelectingIndex = i;
-
-				PlaySelectingWave();
 			}
 
+			// Wave Click
+			if (wavClicked) {
+				PlaySelectingWave((mousePos.X - waveX - WAVE_BORD) / (max.X - waveX - WAVE_BORD));
+			}
+
+			anyClick = anyClick || press || waveDragging || wavClicked;
 		}
 		GUI.Label("", 0);
 		GUI.Label("", 0);
 		GUI.Label("", 0);
 		if (!GUI.MouseLeftHolding) {
 			Dragged = false;
+		}
+
+		// Stop Music Check
+		if (
+			Raylib.IsMusicValid(music) &&
+			Raylib.IsMusicStreamPlaying(music)
+		) {
+			// Stop when Click Outside
+			if (!anyClick && ImGui.IsMouseClicked(ImGuiMouseButton.Left)) {
+				StopMusic();
+			}
+			// Stop when Reach End
+			if (SelectingIndex >= 0 && SelectingIndex < Searcher.SearchResults.Count) {
+				var line = Searcher.SearchResults[SelectingIndex];
+				float playTime = Raylib.GetMusicTimePlayed(music);
+				float dur = Raylib.GetMusicTimeLength(music);
+				if (playTime > dur * line.EndTime01) {
+					StopMusic();
+				}
+			} else {
+				StopMusic();
+			}
 		}
 
 	}
@@ -253,6 +294,7 @@ public class Window : FlowWindow {
 		if (paths == null || paths.Length == 0) return;
 		foreach (var path in paths) {
 			if (!Util.FolderExists(path)) continue;
+			AudioRootPath = path;
 			Searcher.ImportAsync(path, true);
 			break;
 		}
@@ -302,8 +344,31 @@ public class Window : FlowWindow {
 	}
 
 
-	private void PlaySelectingWave () {
+	private void PlaySelectingWave (float start01 = -1f) {
+		if (SelectingIndex < 0 || SelectingIndex >= Searcher.SearchResults.Count) return;
+		var line = Searcher.SearchResults[SelectingIndex];
+		start01 = start01 < -0.5f ? line.StartTime01 : start01;
+		start01 = Math.Clamp(start01, 0f, 1f);
+		// Play Audio
+		var music = Flow.Music;
+		if (MusicPathID != line.PathID) {
+			if (Raylib.IsMusicValid(music)) {
+				Raylib.UnloadMusicStream(music);
+			}
+			music = Raylib.LoadMusicStream(line.Path);
+		}
+		if (Raylib.IsMusicValid(music)) {
+			Raylib.PlayMusicStream(music);
+			music.Looping = false;
+			float dur = Raylib.GetMusicTimeLength(music);
+			Raylib.SeekMusicStream(music, start01 * dur);
+		}
+		Flow.Music = music;
+	}
 
+
+	private void StopMusic () {
+		Raylib.StopMusicStream(Flow.Music);
 	}
 
 
@@ -395,10 +460,6 @@ public class Window : FlowWindow {
 				line.StartTime01 = 0f;
 				line.EndTime01 = 1f;
 			}
-			// Mid Click
-			if (GUI.MouseMidDown && SelectingIndex == index) {
-				ExportCurrentAudio();
-			}
 		}
 
 		// Draw Edge Line
@@ -413,6 +474,23 @@ public class Window : FlowWindow {
 			GUI.DrawLine(
 				rightEdgeX, y, rightEdgeX, y + height,
 				cursorIndex == 3 ? GuiColor.Orange : GuiColor.Green,
+				1f, 4f
+			);
+		}
+
+		// Draw Playing Line
+		var music = Flow.Music;
+		if (
+			SelectingIndex == index &&
+			Raylib.IsMusicValid(music) &&
+			Raylib.IsMusicStreamPlaying(music)
+		) {
+			float playTime = Raylib.GetMusicTimePlayed(music);
+			float dur = Raylib.GetMusicTimeLength(music);
+			float playX = x + width * playTime / dur;
+			GUI.DrawLine(
+				playX, y, playX, y + height,
+				GuiColor.Red,
 				1f, 4f
 			);
 		}

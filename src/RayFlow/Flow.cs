@@ -20,6 +20,7 @@ public static class Flow {
 	private static int WindowY = -1;
 	private static bool RequireMaximize = false;
 	private static ImFontPtr MainFontPtr;
+	public static Music Music;
 
 	// API
 	public static void Run () {
@@ -164,6 +165,9 @@ public static class Flow {
 		while (!Raylib.WindowShouldClose()) {
 			if (!Raylib.IsWindowMinimized()) {
 				// Begin Draw
+				if (Raylib.IsMusicValid(Music)) {
+					Raylib.UpdateMusicStream(Music);
+				}
 				Raylib.BeginDrawing();
 				if (Raylib.IsFileDropped()) {
 					window.OnFileDropped(Raylib.GetDroppedFiles());

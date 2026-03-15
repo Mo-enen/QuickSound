@@ -11,12 +11,11 @@ public abstract class FlowWindow {
 	public abstract string DeveloperName { get; }
 	public virtual int WindowPadding => 42;
 	public virtual Color BackgroundColor => new Color(12, 12, 12, 255);
-
 	public string SavingFolder => System.IO.Path.Combine(Environment.GetFolderPath(
-		Environment.SpecialFolder.LocalApplicationData),
-		DeveloperName,
-		typeof(Flow).Assembly.GetName().Name
-	);
+	Environment.SpecialFolder.LocalApplicationData),
+	DeveloperName,
+	typeof(Flow).Assembly.GetName().Name
+);
 	public int Width { get; internal set; }
 	public int Height { get; internal set; }
 
