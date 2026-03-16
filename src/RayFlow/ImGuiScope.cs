@@ -32,12 +32,12 @@ public readonly struct GroupScope : IDisposable {
 public readonly struct ChildScope : IDisposable {
 	private readonly bool Success;
 	public static uint DynamicID;
-	public ChildScope () : this(0f, 0f, 42f, 6f, GuiColor.Clear) { }
-	public ChildScope (float width, float height, float scrollBarSize = 42, float scrollbarRounding = 6, GuiColor bgColor = GuiColor.Clear) {
+	public ChildScope () : this(0f, 0f, 42f, 6f, GuiColor.Clear, ImGuiChildFlags.None, ImGuiWindowFlags.None) { }
+	public ChildScope (float width, float height, float scrollBarSize = 42, float scrollbarRounding = 6, GuiColor bgColor = GuiColor.Clear, ImGuiChildFlags flags = ImGuiChildFlags.None, ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None) {
 		using var a = new StyleScope(ImGuiStyleVar.ScrollbarRounding, scrollbarRounding);
 		using var b = new StyleScope(ImGuiStyleVar.ScrollbarSize, scrollBarSize);
 		using var c = new StyleColorScope(ImGuiCol.ChildBg, bgColor.ToVec4());
-		Success = ImGui.BeginChild(DynamicID, new Vector2(width, height));
+		Success = ImGui.BeginChild(DynamicID, new Vector2(width, height), flags, windowFlags);
 		DynamicID++;
 	}
 	public void Dispose () {

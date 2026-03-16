@@ -68,13 +68,6 @@ public class Wave {
 		using var writer = new BinaryWriter(stream);
 		result = new Wave();
 		try {
-			Debug.Log(
-				$"from:\"{audioFilePath}\"",
-				$"\nto:\"{waveFilePath}\"",
-				$"\nch:{wave.Channels},",
-				$"count:{wave.SampleCount},",
-				$"rate:{wave.SampleRate}\n"
-			);
 			int sCount = (int)wave.SampleCount;
 			int channelCount = (int)wave.Channels;
 			int currentWaveIndex = 0;
@@ -106,6 +99,10 @@ public class Wave {
 					currentWaveSample = 0f;
 				}
 			}
+#if DEBUG
+			// Msg
+			Debug.LogSuccess($"Wave Loaded: {Util.GetNameWithoutExtension(audioFilePath)}\n");
+#endif
 		} catch (System.Exception ex) { Debug.LogException(ex); }
 
 		// Final

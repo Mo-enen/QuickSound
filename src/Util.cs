@@ -10,7 +10,7 @@ using Debug = RayFlow.Debug;
 
 namespace QuickSound;
 
-static partial class Util {
+public static partial class Util {
 
 	// File
 	public static void TextToFile (string data, string path, Encoding encoding, bool append = false) {
@@ -45,9 +45,11 @@ static partial class Util {
 			yield return str;
 		}
 	}
-	public static IEnumerable<string> EnumerateFiles (string path, bool topOnly, params string[] searchPatterns) {
+	public static IEnumerable<string> EnumerateFiles (string path, bool topOnly, bool ignoreCase, params string[] searchPatterns) {
 		if (!FolderExists(path)) yield break;
-		var option = topOnly ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories;
+		var option = FromSearchOption(topOnly);
+		option.MatchCasing = ignoreCase ? MatchCasing.CaseInsensitive : MatchCasing.CaseSensitive;
+		option.AttributesToSkip = FileAttributes.System | FileAttributes.Temporary | FileAttributes.SparseFile | FileAttributes.ReparsePoint;
 		if (searchPatterns == null || searchPatterns.Length == 0) {
 			foreach (var filePath in Directory.EnumerateFiles(path, "*", option)) {
 				yield return filePath;
@@ -59,6 +61,10 @@ static partial class Util {
 				}
 			}
 		}
+		// FUNC
+		static EnumerationOptions FromSearchOption (bool topOnly) => !topOnly ?
+			new EnumerationOptions { RecurseSubdirectories = true, MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false } :
+			new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
 	}
 
 	public static IEnumerable<string> EnumerateFolders (string path, bool topOnly, string searchPattern = "*") {
@@ -147,6 +153,7 @@ static partial class Util {
 
 	// Misc
 	public static bool NotEnd (this BinaryReader reader) => reader.BaseStream.Position < reader.BaseStream.Length;
+	public static bool NotEnd (this StreamReader reader) => reader.BaseStream.Position < reader.BaseStream.Length;
 
 	public static string GetEnvironmentVariable (string key, EnvironmentVariableTarget target) => Environment.GetEnvironmentVariable(key, target);
 
@@ -163,6 +170,7 @@ static partial class Util {
 	public static string GetExtensionWithDot (string path) => Path.GetExtension(path);//.txt
 
 	public static string GetNameWithoutExtension (string path) => Path.GetFileNameWithoutExtension(path);
+	public static string GetNameWithExtension (string path) => Path.GetFileName(path);
 
 	public static bool FolderExists (string path) => Directory.Exists(path);
 

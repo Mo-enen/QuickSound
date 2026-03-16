@@ -8,50 +8,58 @@ namespace QuickSound;
 
 public static class WavePool {
 
-	// Api
-	public static int CurrentRequireCount => WaveRequiring.Count;
-
 	// Data
 	private static readonly Dictionary<int, Wave> Pool = [];
-	private static readonly Queue<(int pathID, string audioFilePath)> WaveRequiring = [];
+	private static (int pathID, string path) MajorRequirement = (0, "");
+	private static HashSet<int> NoCacheSet = [];
 
 	// API
 	public static void StartBackgroundLoop () => Task.Run(BackgroundRequiringLoop);
 
-	public static bool TryGetWave (int pathID, out Wave wave) => Pool.TryGetValue(pathID, out wave) && wave != null;
+	public static bool TryGetWave (int pathID, out Wave wave) => Pool.TryGetValue(pathID, out wave);
 
-	public static void RequireWave (int pathID, string audioFilePath) {
+	public static void RequireWave (int pathID, string audioPath) {
 		if (Pool.ContainsKey(pathID)) return;
+		// Cache Check
+		if (!NoCacheSet.Contains(pathID)) {
+			string dataPath = Wave.GetWaveDataPath(audioPath);
+			if (Util.FileExists(dataPath)) {
+				long dataDate = Util.GetFileCreationDate(dataPath);
+				long audioDate = Util.GetFileModifyDate(audioPath);
+				if (audioDate == dataDate) {
+					// Load From Cache
+					var wave = new Wave();
+					wave.LoadFromFile(dataPath);
+					Pool[pathID] = wave;
+					return;
+				}
+			} else {
+				// Create Cache
+				NoCacheSet.Add(pathID);
+			}
+		}
+		// Create Wave
+		if (MajorRequirement.pathID != 0) return;
 		Pool.Add(pathID, null);
-		WaveRequiring.Enqueue((pathID, audioFilePath));
+		MajorRequirement = (pathID, audioPath);
 	}
 
 	// LGC
 	private static void BackgroundRequiringLoop () {
 		while (true) {
 			try {
-				while (WaveRequiring.TryDequeue(out var requirData)) {
-					var (pathID, audioPath) = requirData;
+				if (MajorRequirement.pathID != 0) {
+					string audioPath = MajorRequirement.path;
+					int pathID = MajorRequirement.pathID;
 					string dataPath = Wave.GetWaveDataPath(audioPath);
 					long audioDate = Util.GetFileModifyDate(audioPath);
-					if (Util.FileExists(dataPath)) {
-						long dataDate = Util.GetFileCreationDate(dataPath);
-						if (audioDate == dataDate) {
-							// Load From File
-							var wave = new Wave();
-							wave.LoadFromFile(dataPath);
-							Pool[pathID] = wave;
-						} else if (Wave.CreateWavForAudioFile(audioPath, dataPath, audioDate, out var wave)) {
-							// Override New
-							Pool[pathID] = wave;
-						}
-					} else if (Wave.CreateWavForAudioFile(audioPath, dataPath, audioDate, out var wave)) {
-						// Create New
+					if (Wave.CreateWavForAudioFile(audioPath, dataPath, audioDate, out var wave)) {
 						Pool[pathID] = wave;
 					}
 				}
-				Thread.Sleep(20);
 			} catch (System.Exception ex) { Debug.LogException(ex); }
+			MajorRequirement = (0, "");
+			Thread.Sleep(5);
 		}
 	}
 

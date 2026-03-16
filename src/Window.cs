@@ -26,8 +26,12 @@ public class Window : FlowWindow {
 
 	// Data
 	private readonly AudioSearcher Searcher = new();
+	private readonly HashSet<int> PlayedPathIDs = [];
 	private string SearchingText = "";
+	private bool RootInputActive = false;
+	private bool ExportInputActive = false;
 	private bool SearchingInputActive = false;
+	private bool RequireScrollTop = false;
 	private int SelectingIndex = -1;
 	private int DraggingEdgeIndex = 0;
 	private bool Dragged = false;
@@ -51,7 +55,7 @@ public class Window : FlowWindow {
 		LoadSettingFromFile();
 		Wave.WaveCacheRoot = Util.CombinePaths(SavingFolder, "Wave");
 		WavePool.StartBackgroundLoop();
-		Searcher.ImportAsync(AudioRootPath, forceImport: false);
+		Searcher.ImportAsync(AudioRootPath, SavingFolder, forceImport: false);
 		SelectingIndex = -1;
 	}
 
@@ -59,6 +63,7 @@ public class Window : FlowWindow {
 	public override void Update () {
 		Update_Toolbar();
 		Update_Content();
+		Update_Hotkey();
 	}
 
 
@@ -78,20 +83,29 @@ public class Window : FlowWindow {
 
 		// Root Input
 		ImGui.SameLine(labelW);
-		GUI.Input("##Root", ref AudioRootPath, width: -BTN_W, bodyColor: GuiColor.DarkGrey);
+		bool rootActive = GUI.Input("##Root", ref AudioRootPath, width: -BTN_W, bodyColor: GuiColor.DarkGrey);
+		if (RootInputActive && !rootActive) {
+			AudioRootPath = AudioRootPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+			Searcher.ImportAsync(AudioRootPath, SavingFolder, forceImport: false);
+			SelectingIndex = -1;
+			RequireScrollTop = true;
+			StopMusic();
+		}
+		RootInputActive = rootActive;
 
 		// Import Button
 		ImGui.SameLine();
 		ImGui.Spacing();
 		ImGui.SameLine();
-		bool rootPathChanged = !string.IsNullOrEmpty(AudioRootPath) && AudioRootPath != Searcher.AudioRootPath;
+		bool rootPathChanged = !string.IsNullOrEmpty(AudioRootPath) && !Searcher.CheckAudioRoot(AudioRootPath);
 		if (GUI.Button(
 			rootPathChanged ? "Import" : "Reimport",
 			width: BTN_W,
 			bodyColor: rootPathChanged ? (ImGui.GetTime() % 0.8f < 0.4f ? GuiColor.Green : GuiColor.AzureGreen) : GuiColor.DarkGrey,
 			enable: !string.IsNullOrEmpty(AudioRootPath)
 		)) {
-			Searcher.ImportAsync(AudioRootPath, forceImport: true);
+			AudioRootPath = AudioRootPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+			Searcher.ImportAsync(AudioRootPath, SavingFolder, forceImport: true);
 			SelectingIndex = -1;
 			StopMusic();
 		}
@@ -100,13 +114,17 @@ public class Window : FlowWindow {
 
 
 		// =========== Second Row ===========
-		if (!string.IsNullOrEmpty(AudioRootPath)) {
+		if (!string.IsNullOrEmpty(AudioRootPath) && Searcher.Imported && Searcher.ImportPathCount > 0) {
 			// Export Label
 			GUI.Label("Export:", 0, GuiColor.DarkGrey);
 
 			// Export Input
 			ImGui.SameLine(labelW);
-			GUI.Input("##Export", ref ExportPath, width: -BTN_W, bodyColor: GuiColor.DarkGrey);
+			bool exportActive = GUI.Input("##Export", ref ExportPath, width: -BTN_W, bodyColor: GuiColor.DarkGrey);
+			if (ExportInputActive && !exportActive) {
+				ExportPath = ExportPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+			}
+			ExportInputActive = exportActive;
 
 			// Export Button
 			ImGui.SameLine();
@@ -120,7 +138,7 @@ public class Window : FlowWindow {
 				enable: expEnable
 			)) {
 				StopMusic();
-				ExportCurrentAudio();
+				ExportSelectingAudio();
 			}
 
 		}
@@ -128,20 +146,21 @@ public class Window : FlowWindow {
 
 
 		// =========== Third Row ===========
-		if (!string.IsNullOrEmpty(AudioRootPath)) {
+		if (!string.IsNullOrEmpty(AudioRootPath) && Searcher.Imported && Searcher.ImportPathCount > 0) {
 
 			// Search Label
 			GUI.Label("Search:", 0, GuiColor.DarkGrey);
 
 			// Search Input
 			ImGui.SameLine(labelW);
-			bool endEdit = GUI.Input("##Search", ref SearchingText, width: -BTN_W);
-			if (SearchingInputActive && !endEdit) {
+			bool active = GUI.Input("##Search", ref SearchingText, width: -BTN_W);
+			if (SearchingInputActive && !active) {
 				StopMusic();
 				Searcher.PerformSearch(SearchingText);
 				SelectingIndex = -1;
+				RequireScrollTop = true;
 			}
-			SearchingInputActive = endEdit;
+			SearchingInputActive = active;
 			DrawSearchIcon();
 
 		}
@@ -154,15 +173,18 @@ public class Window : FlowWindow {
 
 	private void Update_Content () {
 
-		if (string.IsNullOrEmpty(AudioRootPath)) return;
-
-		// Importing
-		if (!Searcher.Imported && Searcher.Importing) {
+		// Import 
+		if (Searcher.Importing) {
 			ImGui.Spacing();
 			GUI.Label($"Importing... ({Searcher.ImportPathCount})", 0, GuiColor.White);
-			GUI.Label(Searcher.LastImportedPath, 0, GuiColor.Grey);
-			return;
+			GUI.Label(Searcher.ImportingMsg, 0, GuiColor.Grey);
+		} else {
+			ImGui.Spacing();
+			GUI.Label("Drag and drop audio root folder inside this window", 0, GuiColor.Grey);
 		}
+
+		if (!Searcher.Imported) return;
+		if (string.IsNullOrEmpty(Searcher.AudioRootPath)) return;
 
 		// No Result
 		if (Searcher.SearchResults.Count == 0) {
@@ -181,14 +203,9 @@ public class Window : FlowWindow {
 			DraggingEdgeIndex = 0;
 		}
 
-		// Mid Click
-		var music = Flow.Music;
-		if (
-			GUI.MouseMidDown &&
-			Raylib.IsMusicValid(music) &&
-			Raylib.IsMusicStreamPlaying(music)
-		) {
-			Raylib.StopMusicStream(music);
+		// Right Click
+		if (GUI.MouseRightDown) {
+			StopMusic();
 		}
 
 		// Top Bar
@@ -203,18 +220,35 @@ public class Window : FlowWindow {
 		// Result List
 		using var _ = new StyleScope(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
 		using var __ = new StyleScope(ImGuiStyleVar.ButtonTextAlign, new Vector2(0f, 0f));
-		using var ___ = new ChildScope(0, 0, 96, 6);
+		using var ___ = new ChildScope(0, 0, 96, 6, windowFlags: ImGuiWindowFlags.AlwaysVerticalScrollbar);
+		var winSize = ImGui.GetWindowSize();
+		var winPos = ImGui.GetWindowPos();
+		bool winHv = ImGui.IsMouseHoveringRect(winPos, winPos + winSize);
+		var mousePos = GUI.MouseLeftHolding ? GUI.MouseLeftDownPos : GUI.MousePos;
+		if (RequireScrollTop) {
+			RequireScrollTop = false;
+			ImGui.SetScrollY(0);
+		}
 		for (int i = 0; i < Searcher.SearchResults.Count; i++) {
 			var line = Searcher.SearchResults[i];
 			bool selecting = SelectingIndex == i;
-			var textColor = selecting ? GuiColor.Green : GuiColor.DarkWhite;
+			var textColor = selecting ? GuiColor.Green : GuiColor.Grey;
 
-			// Base
-			bool press = false;
-			press = GUI.Button(line.BaseName, BASE_W - ITEM_PADDING, ITEM_H, GuiColor.Clear, textColor);
+			// Size Checker
+			ImGui.Dummy(new Vector2(1, ITEM_H));
 			var min = ImGui.GetItemRectMin();
 			var max = ImGui.GetItemRectMax();
 			max.X = ImGui.GetContentRegionAvail().X + WindowPadding;
+			bool inRange = max.Y > winPos.Y && min.Y < winPos.Y + winSize.Y;
+			bool hovering = winHv && mousePos.X < max.X && mousePos.Y >= min.Y && mousePos.Y < max.Y;
+			if (hovering) {
+				textColor = selecting ? GuiColor.Green : GuiColor.White;
+			}
+
+			// Base
+			bool press = false;
+			ImGui.SameLine();
+			press = GUI.Button(line.BaseName, BASE_W - ITEM_PADDING, ITEM_H, GuiColor.Clear, textColor) && winHv;
 
 			// Tint
 			if (i % 2 == 1) {
@@ -223,21 +257,29 @@ public class Window : FlowWindow {
 
 			// Name
 			ImGui.SameLine(BASE_W);
-			press = GUI.Button(line.Name, NAME_W - ITEM_PADDING, ITEM_H, GuiColor.Clear, textColor) || press;
+			press = (GUI.Button(line.Name, NAME_W - ITEM_PADDING, ITEM_H, GuiColor.Clear, textColor) && winHv) || press;
+			var nameMin = ImGui.GetItemRectMin();
+
+			// Played Mark
+			if (inRange && PlayedPathIDs.Contains(line.PathID)) {
+				GUI.DrawFilledCircle(nameMin.X - 8f, nameMin.Y + ITEM_H / 2, ITEM_H * 0.1f, GuiColor.DarkGrey, 1f, 24);
+			}
 
 			// Wave
 			ImGui.SameLine(BASE_W + NAME_W);
 			float waveX = ImGui.GetWindowPos().X + ImGui.GetCursorPosX();
-			bool waveDragging = GUI.Button("", out bool wavClicked, max.X - waveX, ITEM_H, GuiColor.Clear, returnHolding: true);
-			WaveField(
-				i, waveX + WAVE_BORD, min.Y + WAVE_BORD, max.X - waveX - WAVE_BORD, max.Y - min.Y - WAVE_BORD,
-				waveDragging, wavClicked
-			);
-
-			// Hover
-			var mousePos = GUI.MouseLeftHolding ? GUI.MouseLeftDownPos : GUI.MousePos;
-			if (mousePos.X < max.X && mousePos.Y >= min.Y && mousePos.Y < max.Y) {
-				GUI.DrawFilledRect(min.X, min.Y, waveX, max.Y, GUI.MouseLeftHolding ? GuiColor.Green : GuiColor.White, 0.05f);
+			bool waveDragging = false;
+			bool wavClicked = false;
+			waveDragging = GUI.Button("", out wavClicked, max.X - waveX, ITEM_H, GuiColor.Clear, returnHolding: true);
+			if (inRange) {
+				WaveField(
+					i, waveX + WAVE_BORD, min.Y + WAVE_BORD, max.X - waveX - WAVE_BORD, max.Y - min.Y - WAVE_BORD,
+					waveDragging, wavClicked, winPos.Y, winPos.Y + winSize.Y
+				);
+			}
+			if (!winHv) {
+				waveDragging = false;
+				wavClicked = false;
 			}
 
 			// Press
@@ -266,10 +308,7 @@ public class Window : FlowWindow {
 		}
 
 		// Stop Music Check
-		if (
-			Raylib.IsMusicValid(music) &&
-			Raylib.IsMusicStreamPlaying(music)
-		) {
+		if (IsMusicPlaying()) {
 			// Stop when Click Outside
 			if (!anyClick && ImGui.IsMouseClicked(ImGuiMouseButton.Left)) {
 				StopMusic();
@@ -277,8 +316,8 @@ public class Window : FlowWindow {
 			// Stop when Reach End
 			if (SelectingIndex >= 0 && SelectingIndex < Searcher.SearchResults.Count) {
 				var line = Searcher.SearchResults[SelectingIndex];
-				float playTime = Raylib.GetMusicTimePlayed(music);
-				float dur = Raylib.GetMusicTimeLength(music);
+				float playTime = Raylib.GetMusicTimePlayed(Flow.Music);
+				float dur = Raylib.GetMusicTimeLength(Flow.Music);
 				if (playTime > dur * line.EndTime01) {
 					StopMusic();
 				}
@@ -290,20 +329,57 @@ public class Window : FlowWindow {
 	}
 
 
+	private void Update_Hotkey () {
+
+		if (!Searcher.Imported) return;
+
+		bool ctrl = Raylib.IsKeyDown(KeyboardKey.LeftControl);
+		bool alt = Raylib.IsKeyDown(KeyboardKey.LeftAlt);
+		bool shift = Raylib.IsKeyDown(KeyboardKey.LeftShift);
+
+		// Play/Stop Music
+		if (Raylib.IsKeyPressed(KeyboardKey.Space) && !ctrl && !shift && !alt) {
+			if (IsMusicPlaying()) {
+				StopMusic();
+			} else {
+				PlaySelectingWave();
+			}
+		}
+
+		// Export
+		if (Raylib.IsKeyPressed(KeyboardKey.E) && ctrl && !shift && !alt) {
+			ExportSelectingAudio();
+		}
+
+		// Reset
+		if (Raylib.IsKeyPressed(KeyboardKey.R) && !ctrl && !shift && !alt) {
+			if (SelectingIndex >= 0 && SelectingIndex < Searcher.SearchResults.Count) {
+				var line = Searcher.SearchResults[SelectingIndex];
+				line.StartTime01 = 0f;
+				line.EndTime01 = 1f;
+			}
+		}
+
+		// Reset Played
+		if (Raylib.IsKeyPressed(KeyboardKey.R) && ctrl && shift && !alt) {
+			PlayedPathIDs.Clear();
+		}
+
+	}
+
+
 	public override void OnFileDropped (string[] paths) {
 		if (paths == null || paths.Length == 0) return;
 		foreach (var path in paths) {
 			if (!Util.FolderExists(path)) continue;
 			AudioRootPath = path;
-			Searcher.ImportAsync(path, true);
+			Searcher.ImportAsync(path, SavingFolder, true);
 			break;
 		}
 	}
 
 
-	public override void Quit () {
-		SaveSettingToFile();
-	}
+	public override void Quit () => SaveSettingToFile();
 
 
 	#endregion
@@ -314,7 +390,7 @@ public class Window : FlowWindow {
 	#region --- LGC ---
 
 
-	// Setting
+	// Workflow
 	private void LoadSettingFromFile () {
 		string path = Util.CombinePaths(SavingFolder, "Setting.txt");
 		AudioRootPath = "";
@@ -335,20 +411,26 @@ public class Window : FlowWindow {
 	}
 
 
-	// Misc
-	private void ExportCurrentAudio () {
+	private void ExportSelectingAudio () {
 		if (SelectingIndex < 0 || SelectingIndex >= Searcher.SearchResults.Count) return;
+		ExportPath = ExportPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 		var line = Searcher.SearchResults[SelectingIndex];
+
+
 		Debug.Log(line.Path);
+
+
 
 	}
 
 
-	private void PlaySelectingWave (float start01 = -1f) {
+	// Music
+	private void PlaySelectingWave (float playTime01 = -1f, bool playFromStartWhenPlayTimeNearEnd = true) {
 		if (SelectingIndex < 0 || SelectingIndex >= Searcher.SearchResults.Count) return;
 		var line = Searcher.SearchResults[SelectingIndex];
-		start01 = start01 < -0.5f ? line.StartTime01 : start01;
-		start01 = Math.Clamp(start01, 0f, 1f);
+		playTime01 = playTime01 < -0.5f ? line.StartTime01 : playTime01;
+		playTime01 = Math.Clamp(playTime01, 0f, 1f);
+		PlayedPathIDs.Add(line.PathID);
 		// Play Audio
 		var music = Flow.Music;
 		if (MusicPathID != line.PathID) {
@@ -361,50 +443,36 @@ public class Window : FlowWindow {
 			Raylib.PlayMusicStream(music);
 			music.Looping = false;
 			float dur = Raylib.GetMusicTimeLength(music);
-			Raylib.SeekMusicStream(music, start01 * dur);
+			float time = playTime01 * dur;
+			// Near End Check
+			if (playFromStartWhenPlayTimeNearEnd && Math.Abs(time - line.EndTime01 * dur) < 0.1f) {
+				time = line.StartTime01 * dur;
+			}
+			// Seek
+			Raylib.SeekMusicStream(music, time);
 		}
 		Flow.Music = music;
 	}
 
 
 	private void StopMusic () {
-		Raylib.StopMusicStream(Flow.Music);
+		if (!Raylib.IsMusicValid(Flow.Music)) return;
+		if (Raylib.IsMusicStreamPlaying(Flow.Music)) {
+			Raylib.PauseMusicStream(Flow.Music);
+		}
 	}
 
 
-	// UTL
-	private void DrawSearchIcon () {
-		var fieldMin = ImGui.GetItemRectMin();
-		var fieldMax = ImGui.GetItemRectMax();
-		float size = fieldMax.Y - fieldMin.Y;
-		// Circle
-		GUI.DrawCircle(
-			fieldMax.X - size * 0.7f,
-			fieldMax.Y - size * 0.58f,
-			size * 0.25f,
-			GuiColor.DarkGrey,
-			4f
-		);
-		// Line
-		GUI.DrawLine(
-			fieldMax.X - size * 0.53f,
-			fieldMax.Y - size * 0.43f,
-			fieldMax.X - size * 0.33f,
-			fieldMax.Y - size * 0.23f,
-			GuiColor.DarkGrey,
-			5.5f
-		);
-	}
+	private bool IsMusicPlaying () => Raylib.IsMusicValid(Flow.Music) && Raylib.IsMusicStreamPlaying(Flow.Music);
 
 
-	private void WaveField (int index, float x, float y, float width, float height, bool dragging, bool click) {
+	// UI
+	private void WaveField (int index, float x, float y, float width, float height, bool dragging, bool click, float clampMinY, float clampMaxY) {
 
 		var line = Searcher.SearchResults[index];
 		if (!WavePool.TryGetWave(line.PathID, out var wave)) {
 			WavePool.RequireWave(line.PathID, line.Path);
-			return;
 		}
-		if (wave == null) return;
 
 		float leftEdgeX = x + width * line.StartTime01;
 		float rightEdgeX = x + width * line.EndTime01;
@@ -414,21 +482,34 @@ public class Window : FlowWindow {
 		bool rightEdgeChanged = rightEdgeX < x + width - 1;
 
 		// BG
-		GUI.DrawFilledRect(leftEdgeX, y, rightEdgeX, y + height, GuiColor.White, 0.1f, 4f);
+		GUI.DrawFilledRect(
+			leftEdgeX, y, rightEdgeX, y + height, GuiColor.White,
+			wave == null ? Util.PingPong((float)ImGui.GetTime(), 1f) / 5f : 0.1f,
+			4f
+		);
 
 		// Content
-		var waveColor = SelectingIndex == index ? GuiColor.Green : GuiColor.WhiteAlmost;
+		var waveColor = SelectingIndex == index ? GuiColor.Green : GuiColor.DarkWhite;
 		var outsideWaveColor = GuiColor.DarkGrey;
 		float thickness = (width / Wave.WAVE_LEN) + 1f;
 		float centerY = y + height / 2f;
 		GUI.DrawLine(x, centerY, leftEdgeX, centerY, outsideWaveColor, 1f, 1.5f);
 		GUI.DrawLine(rightEdgeX, centerY, x + width, centerY, outsideWaveColor, 1f, 1.5f);
 		GUI.DrawLine(leftEdgeX, centerY, rightEdgeX, centerY, waveColor, 1f, 1.5f);
-		for (int i = 0; i < Wave.WAVE_LEN; i++) {
-			float lineX = x + width * i / Wave.WAVE_LEN;
-			float lineH = height * wave.Data[i] / 512f;
-			var color = lineX >= leftEdgeX && lineX <= rightEdgeX ? waveColor : outsideWaveColor;
-			GUI.DrawLine(lineX, centerY - lineH, lineX, centerY + lineH, color, 1f, thickness);
+		if (wave != null) {
+			for (int i = 0; i < Wave.WAVE_LEN; i++) {
+				float lineX = x + width * i / Wave.WAVE_LEN;
+				float lineH = height * wave.Data[i] / 512f;
+				var color = lineX >= leftEdgeX && lineX <= rightEdgeX ? waveColor.ToVec4() : outsideWaveColor.ToVec4();
+				float yMin = Math.Clamp(centerY - lineH, clampMinY, clampMaxY);
+				float yMax = Math.Clamp(centerY + lineH, clampMinY, clampMaxY);
+				Raylib.DrawLineEx(
+					new Vector2(lineX, yMin),
+					new Vector2(lineX, yMax),
+					thickness,
+					new Color(color.X, color.Y, color.Z, color.W)
+				);
+			}
 		}
 
 		// Hover Logic
@@ -455,8 +536,8 @@ public class Window : FlowWindow {
 				GUI.RequireCursor = MouseCursor.Crosshair;
 				cursorIndex = 1;
 			}
-			// Right Click
-			if (GUI.MouseRightDown) {
+			// Mid Click
+			if (GUI.MouseMidDown) {
 				line.StartTime01 = 0f;
 				line.EndTime01 = 1f;
 			}
@@ -465,14 +546,14 @@ public class Window : FlowWindow {
 		// Draw Edge Line
 		if (SelectingIndex == index) {
 			GUI.DrawLine(
-				leftEdgeX, y, leftEdgeX, y + height,
+				leftEdgeX - 4f, y, leftEdgeX - 4f, y + height,
 				cursorIndex == 2 ? GuiColor.Orange : GuiColor.Green,
 				1f, 4f
 			);
 		}
 		if (SelectingIndex == index) {
 			GUI.DrawLine(
-				rightEdgeX, y, rightEdgeX, y + height,
+				rightEdgeX + 4f, y, rightEdgeX + 4f, y + height,
 				cursorIndex == 3 ? GuiColor.Orange : GuiColor.Green,
 				1f, 4f
 			);
@@ -480,11 +561,7 @@ public class Window : FlowWindow {
 
 		// Draw Playing Line
 		var music = Flow.Music;
-		if (
-			SelectingIndex == index &&
-			Raylib.IsMusicValid(music) &&
-			Raylib.IsMusicStreamPlaying(music)
-		) {
+		if (SelectingIndex == index && IsMusicPlaying()) {
 			float playTime = Raylib.GetMusicTimePlayed(music);
 			float dur = Raylib.GetMusicTimeLength(music);
 			float playX = x + width * playTime / dur;
@@ -539,6 +616,30 @@ public class Window : FlowWindow {
 			}
 		}
 
+	}
+
+
+	private void DrawSearchIcon () {
+		var fieldMin = ImGui.GetItemRectMin();
+		var fieldMax = ImGui.GetItemRectMax();
+		float size = fieldMax.Y - fieldMin.Y;
+		// Circle
+		GUI.DrawCircle(
+			fieldMax.X - size * 0.7f,
+			fieldMax.Y - size * 0.58f,
+			size * 0.25f,
+			GuiColor.DarkGrey,
+			4f
+		);
+		// Line
+		GUI.DrawLine(
+			fieldMax.X - size * 0.53f,
+			fieldMax.Y - size * 0.43f,
+			fieldMax.X - size * 0.33f,
+			fieldMax.Y - size * 0.23f,
+			GuiColor.DarkGrey,
+			5.5f
+		);
 	}
 
 

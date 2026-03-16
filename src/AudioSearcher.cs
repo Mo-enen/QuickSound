@@ -1,132 +1,214 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using RayFlow;
+
 
 namespace QuickSound;
 
 
-public class SearchResultLine {
-	public string BaseName;
-	public string Name;
-	public string Path;
-	public int PathID;
-	public float StartTime01;
-	public float EndTime01;
-	public SearchResultLine (string path, string audioRootPath) {
-		Path = path;
-		PathID = path.AngeHash();
-		Name = Util.GetNameWithoutExtension(path);
-		if (Util.TryGetRelativePath(audioRootPath, Util.GetParentPath(path), out string rPath)) {
-			BaseName = rPath;
-		} else {
-			BaseName = Util.GetParentPath(Path);
-		}
-		StartTime01 = 0f;
-		EndTime01 = 1f;
-	}
-}
-
-
-
 public class AudioSearcher {
+
+
+
+
+	#region --- SUB ---
+
+
+	public class SearchResultLine {
+
+		public string BaseName;
+		public string Name;
+		public string Path;
+		public int PathID;
+		public float StartTime01;
+		public float EndTime01;
+
+		public SearchResultLine (string path, string audioRootPath) {
+			Path = path;
+			PathID = path.AngeHash();
+			Name = Util.GetNameWithoutExtension(path);
+			if (Util.TryGetRelativePath(audioRootPath, Util.GetParentPath(path), out string rPath)) {
+				BaseName = rPath;
+			} else {
+				BaseName = Util.GetParentPath(Path);
+			}
+			StartTime01 = 0f;
+			EndTime01 = 1f;
+		}
+
+	}
+
+
+	#endregion
+
+
+
+
+	#region --- VAR ---
 
 
 	// Api
 	public readonly List<SearchResultLine> SearchResults = [];
 	public bool Imported { get; private set; } = false;
 	public bool Importing { get; private set; } = false;
-	public int ImportPathCount { get; private set; } = 0;
-	public string LastImportedPath { get; private set; } = "";
+	public int ImportPathCount => ImportedPaths.Count;
+	public string ImportingMsg { get; private set; } = "";
 	public string AudioRootPath { get; private set; } = "";
 
 	// Data
+	private readonly List<(string path, string name)> ImportedPaths = [];
 	private int SearchStamp = 0;
 	private string[] SearchPatterns = null;
+	private string SavingFolderPath;
 
-	// API
-	public void ImportAsync (string audioRoot, bool forceImport) {
+
+	#endregion
+
+
+
+
+	#region --- API ---
+
+
+	public void ImportAsync (string audioRoot, string savingRoot, bool forceImport) {
 		if (Importing) return;
 		Imported = false;
 		AudioRootPath = audioRoot;
+		SavingFolderPath = savingRoot;
+		ImportedPaths.Clear();
 		SearchResults.Clear();
 		SearchStamp++;
+		// Cache File
+		long audioRootPathID = audioRoot.SuperAngeHash();
+		string pathsCachePathRoot = Util.CombinePaths(savingRoot, "Paths");
+		Util.CreateFolder(pathsCachePathRoot);
 		if (forceImport) {
-
-			// TODO
-			// Remove Cache File
-
+			string pathsCachePath = Util.CombinePaths(pathsCachePathRoot, $"{audioRootPathID.ToString()}.txt");
+			if (Util.FileExists(pathsCachePath)) {
+				File.Delete(pathsCachePath);
+			}
 		}
+		// Run Background Task
 		Task.Run(BackgroundImport);
 	}
 
-	public void PerformSearch (string searchingText) {
 
+	public void PerformSearch (string searchingText) {
 		if (!Imported) return;
 		if (string.IsNullOrEmpty(AudioRootPath)) return;
-
 		searchingText ??= "";
-
 		SearchResults.Clear();
 		SearchStamp++;
-		SearchPatterns = searchingText.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+		SearchPatterns = searchingText.ToLower().Split(' ', System.StringSplitOptions.RemoveEmptyEntries) ?? [];
 		Task.Run(BackgroundSearch);
-
-		/////////////////////////////
-
-		string testA = @"E:\Audio\8-Bit Adventure\LOOP_Chaos Powerhouse.wav";
-		string testB = @"E:\Audio\8-Bit Adventure\LOOP_Feel-Good Victory.wav";
-		string testC = @"E:\Audio\8-Bit Adventure\LOOP_Mysterious Cave.wav";
-		string testD = @"E:\Audio\99 Sound Effects\WAV\Drone - Alien VHS.wav";
-		string testE = @"E:\Audio\99 Sound Effects\WAV\Drone - Ocean Cave.wav";
-		string testF = @"E:\Audio\99 Sound Effects\WAV\Impact - Cease Fire.wav";
-		string testG = @"E:\Audio\99 Sound Effects\WAV\Impact - Jaw Breaker.wav";
-		SearchResults.Add(new SearchResultLine(testA, AudioRootPath));
-		SearchResults.Add(new SearchResultLine(testB, AudioRootPath));
-		SearchResults.Add(new SearchResultLine(testC, AudioRootPath));
-		SearchResults.Add(new SearchResultLine(testD, AudioRootPath));
-		SearchResults.Add(new SearchResultLine(testE, AudioRootPath));
-		SearchResults.Add(new SearchResultLine(testF, AudioRootPath));
-		SearchResults.Add(new SearchResultLine(testG, AudioRootPath));
-
-		/////////////////////////////
-
 	}
 
-	// LGC
+
+	public bool CheckAudioRoot (string audioRoot) => AudioRootPath == audioRoot;
+
+
+	#endregion
+
+
+
+
+	#region --- LGC ---
+
+
 	private void BackgroundImport () {
-		Importing = true;
-		ImportPathCount = 0;
 		try {
-
-
-
-
+			Importing = true;
+			ImportedPaths.Clear();
+			string pathsCachePathRoot = Util.CombinePaths(SavingFolderPath, "Paths");
+			string pathsCachePath = Util.CombinePaths(pathsCachePathRoot, $"{AudioRootPath.SuperAngeHash()}.txt");
+			if (Util.FileExists(pathsCachePath)) {
+				// Load From Cache
+				ImportingMsg = "Load From Cache File";
+				using var stream = File.OpenRead(pathsCachePath);
+				using var reader = new StreamReader(stream);
+				while (reader.NotEnd()) {
+					string path = reader.ReadLine();
+					ImportedPaths.Add((path, Util.GetNameWithoutExtension(path).ToLower()));
+				}
+			} else {
+				var dupPool = new Dictionary<string, List<string>>();
+				// Search from Audio Root
+				foreach (var path in Util.EnumerateFiles(AudioRootPath, false, true, "*.wav", "*.mp3", "*.ogg")) {
+					// Check for Duplicate
+					string name = Util.GetNameWithoutExtension(path);
+					if (dupPool.TryGetValue(name, out List<string> dupPaths)) {
+						bool isDup = false;
+						foreach (string dupPath in dupPaths) {
+							if (Util.GetExtensionWithDot(path) == Util.GetExtensionWithDot(dupPath)) continue;
+							if (!Util.TryGetRelativePath(AudioRootPath, path, out string rPath)) continue;
+							if (!Util.TryGetRelativePath(AudioRootPath, dupPath, out string rPathD)) continue;
+							int indexRoot = rPath.IndexOf(Path.DirectorySeparatorChar);
+							int indexRootD = rPathD.IndexOf(Path.DirectorySeparatorChar);
+							if (indexRoot < 0 || indexRootD < 0) continue;
+							if (rPath[..indexRoot] != rPathD[..indexRootD]) continue;
+							isDup = true;
+							break;
+						}
+						if (isDup) continue;
+					} else {
+						dupPool.Add(name, [path]);
+					}
+					// Add
+					ImportedPaths.Add((path, Util.GetNameWithoutExtension(path).ToLower()));
+					ImportingMsg = path;
+				}
+				// Save File
+				using var stream = File.Create(pathsCachePath);
+				using var writer = new StreamWriter(stream);
+				ImportingMsg = "Saving Cache File";
+				foreach (var (path, name) in ImportedPaths) {
+					writer.WriteLine(path);
+				}
+			}
 			// Final
 			Imported = true;
+			ImportingMsg = "";
 			PerformSearch("");
-		} catch (System.Exception ex) { Debug.LogException(ex); }
+		} catch (System.Exception ex) {
+			System.Console.BackgroundColor = System.ConsoleColor.Black;
+			System.Console.ForegroundColor = System.ConsoleColor.Red;
+			System.Console.WriteLine(ex.Source);
+			System.Console.WriteLine(ex.GetType().Name);
+			System.Console.WriteLine(ex.Message);
+			System.Console.WriteLine(ex.StackTrace);
+			System.Console.WriteLine();
+			System.Console.ResetColor();
+		}
 		Importing = false;
 	}
 
+
 	private void BackgroundSearch () {
-
 		int stamp = SearchStamp;
-
-
-
-
-		// Change Check
-		if (stamp != SearchStamp) return;
-
-
 		// Search
-
-
-
-
+		foreach (var (path, name) in ImportedPaths) {
+			// Search Check
+			if (SearchPatterns.Length > 0) {
+				bool matched = false;
+				foreach (string pat in SearchPatterns) {
+					if (!name.Contains(pat)) continue;
+					matched = true;
+					break;
+				}
+				if (!matched) continue;
+			}
+			if (stamp != SearchStamp) return;
+			// Add Path
+			SearchResults.Add(new SearchResultLine(path, AudioRootPath));
+		}
 	}
+
+
+	#endregion
+
+
 
 
 }
