@@ -113,6 +113,19 @@ public static partial class Util {
 		return true;
 	}
 
+	public static bool CopyFile (string from, string to, bool overwrite = true) {
+		if (!FileExists(from)) return false;
+		try {
+			CreateFolder(GetParentPath(to));
+			File.Copy(from, to, overwrite);
+			return true;
+		} catch (System.Exception ex) {
+			Debug.LogException(ex);
+			return false;
+		}
+	}
+
+
 	// File-Date
 	public static long GetFileModifyDate (string path) {
 		if (!FileExists(path)) return 0;

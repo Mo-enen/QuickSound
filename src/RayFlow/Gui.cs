@@ -9,8 +9,8 @@ namespace RayFlow;
 
 
 public enum GuiColor {
-	Clear, White, WhiteAlmost, DarkWhite, LightGrey, Grey, DarkGrey, BlackAlmost, Black,
-	Red, Orange, Yellow, OliveYellow, Green, DarkGreen, AzureGreen, Cyan, VividCyan, Blue, Purple, Pink, LotusPink,
+	Clear, ClearAlmost, White, WhiteAlmost, DarkWhite, LightGrey, Grey, DarkGrey, BlackAlmost, Black,
+	Red, DarkRed, Orange, Yellow, OliveYellow, Green, DarkGreen, AzureGreen, Cyan, VividCyan, Blue, Purple, Pink, LotusPink,
 }
 
 
@@ -30,6 +30,7 @@ public static class GUI {
 	public static Vector2 MouseLeftDownPos { get; set; }
 	public static Vector2 MouseRightDownPos { get; set; }
 	public static Vector2 MouseMidDownPos { get; set; }
+	public static float Time { get; private set; }
 
 	// Data
 	private static bool PrevMouseLeftHolding;
@@ -39,6 +40,7 @@ public static class GUI {
 
 	// MSG
 	internal static void Begin () {
+		Time = (float)ImGui.GetTime();
 		ButtonDynamicID = 1;
 		ChildScope.DynamicID = 1;
 		PrevMouseLeftHolding = MouseLeftHolding;
@@ -100,7 +102,7 @@ public static class GUI {
 		ImGui.LabelText(text, "");
 	}
 
-	public static bool Input (string label, ref string text, uint maxLen = 64, float width = -1f, GuiColor bodyColor = GuiColor.VividCyan, GuiColor color = GuiColor.WhiteAlmost) {
+	public static bool Input (string label, ref string text, uint maxLen = 128, float width = -1f, GuiColor bodyColor = GuiColor.VividCyan, GuiColor color = GuiColor.WhiteAlmost) {
 		using var _ = new StyleColorScope(ImGuiCol.Text, color);
 		using var __ = new StyleColorScope(ImGuiCol.FrameBg, bodyColor.Mult(0.4f));
 		using var ___ = new StyleScope(ImGuiStyleVar.FrameRounding, 4f);
@@ -137,6 +139,7 @@ public static class GUI {
 
 	// UTL
 	public static Vector4 ToVec4 (this GuiColor color) => color switch {
+		GuiColor.ClearAlmost => new(1f, 1f, 1f, 0.02f),
 		GuiColor.White => new(1f, 1f, 1f, 1f),
 		GuiColor.WhiteAlmost => new(0.9f, 0.9f, 0.9f, 1f),
 		GuiColor.DarkWhite => new(0.8f, 0.8f, 0.8f, 1f),
@@ -145,7 +148,9 @@ public static class GUI {
 		GuiColor.DarkGrey => new(0.35f, 0.35f, 0.35f, 1f),
 		GuiColor.BlackAlmost => new(0.1f, 0.1f, 0.1f, 1f),
 		GuiColor.Black => new(0, 0, 0, 1f),
+
 		GuiColor.Red => new(1, 0, 0, 1f),
+		GuiColor.DarkRed => new(0.5f, 0, 0, 1f),
 		GuiColor.Orange => new(1, 0.5f, 0, 1f),
 		GuiColor.Yellow => new(1, 1, 0, 1f),
 		GuiColor.OliveYellow => new(0.5f, 1, 0, 1f),

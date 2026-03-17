@@ -208,6 +208,9 @@ public static class Flow {
 	}
 
 	private static void Quit (FlowWindow window) {
+		if (Raylib.IsMusicValid(Music)) {
+			Raylib.UnloadMusicStream(Music);
+		}
 		rlImGui.Shutdown();
 		Raylib.CloseAudioDevice();
 		string path = CombinePaths(window.SavingFolder, "Config.txt");

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace QuickSound;
 
 
-public class AudioSearcher {
+public class Searcher {
 
 
 
@@ -53,6 +53,7 @@ public class AudioSearcher {
 	public readonly List<SearchResultLine> SearchResults = [];
 	public bool Imported { get; private set; } = false;
 	public bool Importing { get; private set; } = false;
+	public bool Searching { get; private set; } = false;
 	public int ImportPathCount => ImportedPaths.Count;
 	public string ImportingMsg { get; private set; } = "";
 	public string AudioRootPath { get; private set; } = "";
@@ -171,38 +172,45 @@ public class AudioSearcher {
 			Imported = true;
 			ImportingMsg = "";
 			PerformSearch("");
-		} catch (System.Exception ex) {
-			System.Console.BackgroundColor = System.ConsoleColor.Black;
-			System.Console.ForegroundColor = System.ConsoleColor.Red;
-			System.Console.WriteLine(ex.Source);
-			System.Console.WriteLine(ex.GetType().Name);
-			System.Console.WriteLine(ex.Message);
-			System.Console.WriteLine(ex.StackTrace);
-			System.Console.WriteLine();
-			System.Console.ResetColor();
-		}
+		} catch (System.Exception ex) { LogEx(ex); }
 		Importing = false;
 	}
 
 
 	private void BackgroundSearch () {
-		int stamp = SearchStamp;
-		// Search
-		foreach (var (path, name) in ImportedPaths) {
-			// Search Check
-			if (SearchPatterns.Length > 0) {
-				bool matched = false;
-				foreach (string pat in SearchPatterns) {
-					if (!name.Contains(pat)) continue;
-					matched = true;
-					break;
+		Searching = true;
+		try {
+			int stamp = SearchStamp;
+			// Search
+			foreach (var (path, name) in ImportedPaths) {
+				// Search Check
+				if (SearchPatterns.Length > 0) {
+					bool matched = false;
+					foreach (string pat in SearchPatterns) {
+						if (!name.Contains(pat)) continue;
+						matched = true;
+						break;
+					}
+					if (!matched) continue;
 				}
-				if (!matched) continue;
+				if (stamp != SearchStamp) return;
+				// Add Path
+				SearchResults.Add(new SearchResultLine(path, AudioRootPath));
 			}
-			if (stamp != SearchStamp) return;
-			// Add Path
-			SearchResults.Add(new SearchResultLine(path, AudioRootPath));
-		}
+		} catch (System.Exception ex) { LogEx(ex); }
+		Searching = false;
+	}
+
+
+	private static void LogEx (System.Exception ex) {
+		System.Console.BackgroundColor = System.ConsoleColor.Black;
+		System.Console.ForegroundColor = System.ConsoleColor.Red;
+		System.Console.WriteLine(ex.Source);
+		System.Console.WriteLine(ex.GetType().Name);
+		System.Console.WriteLine(ex.Message);
+		System.Console.WriteLine(ex.StackTrace);
+		System.Console.WriteLine();
+		System.Console.ResetColor();
 	}
 
 

@@ -60,14 +60,18 @@ public class Wave {
 		}
 		if (wave.SampleCount == 0 || wave.Channels == 0) return false;
 
-		// Calculate Wave and Write
 		float* samples = Raylib.LoadWaveSamples(wave);
-		if (string.IsNullOrEmpty(waveFilePath)) return false;
-		Util.CreateFolder(Util.GetParentPath(waveFilePath));
-		using var stream = File.Create(waveFilePath);
-		using var writer = new BinaryWriter(stream);
-		result = new Wave();
+
 		try {
+			// Calculate Wave and Write
+			if (string.IsNullOrEmpty(waveFilePath)) {
+				Raylib.UnloadWave(wave);
+				return false;
+			}
+			Util.CreateFolder(Util.GetParentPath(waveFilePath));
+			using var stream = File.Create(waveFilePath);
+			using var writer = new BinaryWriter(stream);
+			result = new Wave();
 			int sCount = (int)wave.SampleCount;
 			int channelCount = (int)wave.Channels;
 			int currentWaveIndex = 0;
