@@ -132,11 +132,13 @@ public static class Flow {
 
 		// GUI Setup
 		rlImGui.Setup(darkTheme: true, enableDocking: false);
+		var io = ImGui.GetIO();
+		io.ConfigDebugIniSettings = false;
+		io.WantSaveIniSettings = false;
 
 		// Init Font
 		var ImGuiContext = ImGui.CreateContext();
 		ImGui.SetCurrentContext(ImGuiContext);
-		var io = ImGui.GetIO();
 		unsafe {
 			fixed (byte* p = FontBytes) {
 				MainFontPtr = io.Fonts.AddFontFromMemoryTTF(

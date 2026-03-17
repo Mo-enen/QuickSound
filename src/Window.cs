@@ -554,6 +554,7 @@ public class Window : FlowWindow {
 		// Play Audio
 		var music = Flow.Music;
 		if (MusicPathID != line.PathID) {
+			MusicPathID = line.PathID;
 			if (Raylib.IsMusicValid(music)) {
 				Raylib.UnloadMusicStream(music);
 			}

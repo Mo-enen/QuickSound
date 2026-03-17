@@ -6,3 +6,4 @@ bin/
 *.editorconfig
 *.ini
 Build
+Publish

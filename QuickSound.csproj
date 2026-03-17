@@ -43,8 +43,6 @@
 	<!--Release Only-->
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
 		<OutputType>WinExe</OutputType>
-		<DebugType>none</DebugType>
-		<PublishAot>true</PublishAot>
 		<GenerateAssemblyInfo>True</GenerateAssemblyInfo>
 		<PublishSingleFile>true</PublishSingleFile>
 		<SelfContained>true</SelfContained>
@@ -55,6 +53,9 @@
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 	</PropertyGroup>
+
+
+	<!--Remove-->
 	<ItemGroup>
 		<None Remove=".gitattributes" />
 		<None Remove=".gitignore" />
@@ -92,11 +93,12 @@
 		</ContentWithTargetPath>
 	</ItemGroup>
 
-	
+
 	<!--Embedded-->
 	<ItemGroup>
-		<EmbeddedResource Include="res\*" />
+		<EmbeddedResource Include="res\Font.ttf" />
+		<EmbeddedResource Include="res\Icon.png" />
 	</ItemGroup>
 
-	
+
 </Project>
