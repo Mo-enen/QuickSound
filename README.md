@@ -13,6 +13,10 @@
 
 ### Changes
 
+`v1.0.2`
+
+- Search with `-` to remove keyword from result. Search "wind -windy" will show all sound files with "wind" but no "windy" in their name.
+
 `v1.0.1`
 
 - Fix Raylib music stream issue #4521. Seek music stream to 0 will not make it goes to the end. Detail: [raysan5/raylib#4523](https://github.com/raysan5/raylib/pull/4523)
