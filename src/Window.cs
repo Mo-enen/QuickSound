@@ -561,7 +561,6 @@ public class Window : FlowWindow {
 			music = Raylib.LoadMusicStream(line.Path);
 		}
 		if (Raylib.IsMusicValid(music)) {
-			Raylib.PlayMusicStream(music);
 			music.Looping = false;
 			float dur = Raylib.GetMusicTimeLength(music);
 			float time = playTime01 * dur;
@@ -571,15 +570,17 @@ public class Window : FlowWindow {
 			}
 			// Seek
 			Raylib.SeekMusicStream(music, time);
+			Raylib.PlayMusicStream(music);
 		}
 		Flow.Music = music;
 	}
 
 
 	private void StopMusic () {
-		if (!Raylib.IsMusicValid(Flow.Music)) return;
-		if (Raylib.IsMusicStreamPlaying(Flow.Music)) {
-			Raylib.PauseMusicStream(Flow.Music);
+		var music = Flow.Music;
+		if (!Raylib.IsMusicValid(music)) return;
+		if (Raylib.IsMusicStreamPlaying(music)) {
+			Raylib.PauseMusicStream(music);
 		}
 	}
 

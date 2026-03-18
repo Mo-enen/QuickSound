@@ -16,7 +16,7 @@ public class Wave {
 
 
 	// Const
-	public const int WAVE_LEN = 256;
+	public const int WAVE_LEN = 1024;
 
 	// Api
 	public static string WaveCacheRoot = "";
