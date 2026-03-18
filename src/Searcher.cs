@@ -41,6 +41,9 @@ public class Searcher {
 	}
 
 
+	private enum PatternType { Contains, Remove, }
+
+
 	#endregion
 
 
@@ -57,11 +60,12 @@ public class Searcher {
 	public int ImportPathCount => ImportedPaths.Count;
 	public string ImportingMsg { get; private set; } = "";
 	public string AudioRootPath { get; private set; } = "";
+	public string SearchedText { get; private set; } = "";
 
 	// Data
 	private readonly List<(string path, string name)> ImportedPaths = [];
+	private readonly List<(string pat, PatternType type)> SearchPatterns = [];
 	private int SearchStamp = 0;
-	private string[] SearchPatterns = null;
 	private string SavingFolderPath;
 
 
@@ -99,10 +103,20 @@ public class Searcher {
 	public void PerformSearch (string searchingText) {
 		if (!Imported) return;
 		if (string.IsNullOrEmpty(AudioRootPath)) return;
+		Searching = true;
 		searchingText ??= "";
 		SearchResults.Clear();
 		SearchStamp++;
-		SearchPatterns = searchingText.ToLower().Split(' ', System.StringSplitOptions.RemoveEmptyEntries) ?? [];
+		SearchedText = searchingText;
+		SearchPatterns.Clear();
+		var patterns = searchingText.ToLower().Split(' ', System.StringSplitOptions.RemoveEmptyEntries) ?? [];
+		foreach (string pat in patterns) {
+			if (pat.StartsWith('-')) {
+				SearchPatterns.Add((pat[1..], PatternType.Remove));
+			} else {
+				SearchPatterns.Add((pat, PatternType.Contains));
+			}
+		}
 		Task.Run(BackgroundSearch);
 	}
 
@@ -181,17 +195,35 @@ public class Searcher {
 		Searching = true;
 		try {
 			int stamp = SearchStamp;
+			bool hasRemove = false;
+			foreach (var (_, type) in SearchPatterns) {
+				if (type == PatternType.Remove) {
+					hasRemove = true;
+					break;
+				}
+			}
 			// Search
 			foreach (var (path, name) in ImportedPaths) {
 				// Search Check
-				if (SearchPatterns.Length > 0) {
-					bool matched = false;
-					foreach (string pat in SearchPatterns) {
-						if (!name.Contains(pat)) continue;
-						matched = true;
-						break;
+				if (SearchPatterns.Count > 0) {
+					bool contains = false;
+					bool remove = false;
+					foreach (var (pat, type) in SearchPatterns) {
+						switch (type) {
+							case PatternType.Contains:
+								if (name.Contains(pat)) contains = true;
+								break;
+							case PatternType.Remove:
+								if (name.Contains(pat)) remove = true;
+								break;
+						}
+						if (hasRemove) {
+							if (remove) break;
+						} else {
+							if (contains) break;
+						}
 					}
-					if (!matched) continue;
+					if (!contains || remove) continue;
 				}
 				if (stamp != SearchStamp) return;
 				// Add Path

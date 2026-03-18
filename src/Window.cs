@@ -35,7 +35,7 @@ public class Window : FlowWindow {
 	private bool Dragged = false;
 	private bool LastExportSuccess;
 	private int SelectingIndex = -1;
-	private int DraggingEdgeIndex = 0;
+	private int DraggingWaveEdgeIndex = 0;
 	private int MusicPathID;
 	private float DraggingEdgeOffsetX;
 	private float LastExportedTime = -100f;
@@ -195,7 +195,7 @@ public class Window : FlowWindow {
 			ImGui.Dummy(new Vector2((winWidth - width) / 2f, 1));
 			ImGui.SameLine();
 			bool active = GUI.Input("##Search", ref SearchingText, width: width);
-			if (SearchingInputActive && !active) {
+			if (SearchingInputActive && !active && SearchingText != Searcher.SearchedText) {
 				StopMusic();
 				Searcher.PerformSearch(SearchingText);
 				SelectingIndex = -1;
@@ -205,6 +205,7 @@ public class Window : FlowWindow {
 			SearchingInputActive = active;
 			DrawSearchIcon();
 			ImGui.Dummy(new Vector2(0, 24));
+
 		}
 
 		// Import Check
@@ -240,7 +241,7 @@ public class Window : FlowWindow {
 		const float SCROLL_BAR_W = 96;
 		bool anyClick = false;
 		if (!GUI.MouseLeftHolding) {
-			DraggingEdgeIndex = 0;
+			DraggingWaveEdgeIndex = 0;
 		}
 
 		// Right Click
@@ -305,7 +306,7 @@ public class Window : FlowWindow {
 				} else if (max.Y < winPos.Y) {
 					continue;
 				}
-				
+
 				// Base
 				bool press = false;
 				ImGui.SameLine();
@@ -323,7 +324,7 @@ public class Window : FlowWindow {
 
 				// Played Mark
 				if (PlayedPathIDs.Contains(line.PathID)) {
-					GUI.DrawFilledCircle(nameMin.X - 8f, nameMin.Y + ITEM_H / 2, ITEM_H * 0.1f, GuiColor.DarkGrey, 1f, 24);
+					GUI.DrawFilledCircle(nameMin.X - 8f, nameMin.Y + ITEM_H / 2, ITEM_H * 0.1f, GuiColor.DarkGreen, 1f, 24);
 				}
 
 				// Wave
@@ -342,15 +343,17 @@ public class Window : FlowWindow {
 					wavClicked = false;
 				}
 
-				// Press
-				if (press) {
-					SelectingIndex = i;
-					PlaySelectingWave();
+				// Change Selection
+				if (press || waveDragging) {
+					if (SelectingIndex != i) {
+						SelectingIndex = i;
+						LastExportedTime = -100f;
+					}
 				}
 
-				// Wave Press
-				if (waveDragging) {
-					SelectingIndex = i;
+				// Play Wave on Press
+				if (press) {
+					PlaySelectingWave();
 				}
 
 				// Wave Click
@@ -703,14 +706,14 @@ public class Window : FlowWindow {
 		// Dragging
 		if (dragging) {
 			// Start
-			if (DraggingEdgeIndex == 0) {
-				DraggingEdgeIndex = cursorIndex;
+			if (DraggingWaveEdgeIndex == 0) {
+				DraggingWaveEdgeIndex = cursorIndex;
 			}
 			if (Math.Abs(mouseX - GUI.MouseLeftDownPos.X) > 12) {
 				Dragged = true;
 			}
 			// Dragging
-			switch (DraggingEdgeIndex) {
+			switch (DraggingWaveEdgeIndex) {
 				// Left
 				case 2:
 					line.StartTime01 = (Math.Clamp(mouseX - DraggingEdgeOffsetX, x, rightEdgeX) - x) / width;
