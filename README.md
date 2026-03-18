@@ -17,6 +17,7 @@
 
 - Fix Raylib music stream issue #4521. Seek music stream to 0 will not make it goes to the end. Detail: [raysan5/raylib#4523](https://github.com/raysan5/raylib/pull/4523)
 - Larger wave preview cache. (from 256 to 1024)
+- Better search result UI. Significantly reduce CPU usage for large result count.
 
 `v1.0.0`
 

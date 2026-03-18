@@ -293,12 +293,19 @@ public class Window : FlowWindow {
 				var min = ImGui.GetItemRectMin();
 				var max = ImGui.GetItemRectMax();
 				max.X = ImGui.GetContentRegionAvail().X + WindowPadding;
-				bool inRange = max.Y > winPos.Y && min.Y < winPos.Y + winSize.Y;
 				bool hovering = winHv && mousePos.X < max.X && mousePos.Y >= min.Y && mousePos.Y < max.Y;
 				if (hovering) {
 					textColor = selecting ? GuiColor.Green : GuiColor.White;
 				}
 
+				// Last In Range Check
+				if (min.Y > winPos.Y + winSize.Y) {
+					ImGui.Dummy(new Vector2(1, ITEM_H * (Searcher.SearchResults.Count - i - 1)));
+					break;
+				} else if (max.Y < winPos.Y) {
+					continue;
+				}
+				
 				// Base
 				bool press = false;
 				ImGui.SameLine();
@@ -315,7 +322,7 @@ public class Window : FlowWindow {
 				var nameMin = ImGui.GetItemRectMin();
 
 				// Played Mark
-				if (inRange && PlayedPathIDs.Contains(line.PathID)) {
+				if (PlayedPathIDs.Contains(line.PathID)) {
 					GUI.DrawFilledCircle(nameMin.X - 8f, nameMin.Y + ITEM_H / 2, ITEM_H * 0.1f, GuiColor.DarkGrey, 1f, 24);
 				}
 
@@ -325,12 +332,11 @@ public class Window : FlowWindow {
 				bool waveDragging = false;
 				bool wavClicked = false;
 				waveDragging = GUI.Button("", out wavClicked, max.X - waveX, ITEM_H, GuiColor.Clear, returnHolding: true);
-				if (inRange) {
-					WaveField(
-						i, waveX + WAVE_BORD, min.Y + WAVE_BORD, max.X - waveX - WAVE_BORD, max.Y - min.Y - WAVE_BORD,
-						waveDragging, wavClicked, winPos.Y, winPos.Y + winSize.Y
-					);
-				}
+				WaveField(
+					i, waveX + WAVE_BORD, min.Y + WAVE_BORD, max.X - waveX - WAVE_BORD, max.Y - min.Y - WAVE_BORD,
+					waveDragging, wavClicked, winPos.Y, winPos.Y + winSize.Y
+				);
+
 				if (!winHv) {
 					waveDragging = false;
 					wavClicked = false;
