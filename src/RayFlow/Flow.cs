@@ -28,7 +28,6 @@ public static class Flow {
 		Init(window);
 		Loop(window);
 		Quit(window);
-		window.Quit();
 	}
 
 	// MSG
@@ -167,9 +166,8 @@ public static class Flow {
 		while (!Raylib.WindowShouldClose()) {
 			if (!Raylib.IsWindowMinimized()) {
 				// Begin Draw
-				if (Raylib.IsMusicValid(Music)) {
-					Raylib.UpdateMusicStream(Music);
-				}
+				Raylib.UpdateMusicStream(Music);
+
 				Raylib.BeginDrawing();
 				if (Raylib.IsFileDropped()) {
 					window.OnFileDropped(Raylib.GetDroppedFiles());
@@ -213,7 +211,6 @@ public static class Flow {
 		if (Raylib.IsMusicValid(Music)) {
 			Raylib.UnloadMusicStream(Music);
 		}
-		rlImGui.Shutdown();
 		Raylib.CloseAudioDevice();
 		string path = CombinePaths(window.SavingFolder, "Config.txt");
 		var builder = new StringBuilder();
@@ -230,9 +227,12 @@ public static class Flow {
 		}
 		builder.AppendLine($"Maximized:{Raylib.IsWindowMaximized()}");
 		TextToFile(builder.ToString(), path);
+		window.Quit();
 #if DEBUG
 		DevUtil.Debug_OnAppEnd();
 #endif
+		rlImGui.Shutdown();
+		Raylib.CloseWindow();
 	}
 
 	// UTL

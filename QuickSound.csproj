@@ -62,6 +62,8 @@
 		<None Remove="desktop.ini" />
 		<None Remove="Icon.png" />
 		<None Remove="LICENSE" />
+		<None Remove="publish.bat" />
+		<None Remove="README.md" />
 		<None Remove="res\Font.ttf" />
 		<None Remove="res\Icon.png" />
 	</ItemGroup>
