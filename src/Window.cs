@@ -234,7 +234,7 @@ public class Window : FlowWindow {
 
 		// List Content
 		const float BASE_W = 560;
-		const float NAME_W = 512;
+		const float NAME_W = 860;
 		const float ITEM_H = 64;
 		const float ITEM_PADDING = 24;
 		const float WAVE_BORD = 4;
@@ -251,11 +251,11 @@ public class Window : FlowWindow {
 
 		// Top Bar
 		using (new ChildScope(0, 56, bgColor: GuiColor.BlackAlmost)) {
-			GUI.Label("  Category", 0, GuiColor.DarkGrey);
+			GUI.Label("  Category", BASE_W, GuiColor.DarkGrey);
 			ImGui.SameLine(BASE_W);
-			GUI.Label("  Name", 0, GuiColor.DarkGrey);
+			GUI.Label("  Name", NAME_W, GuiColor.DarkGrey);
 			ImGui.SameLine(BASE_W + NAME_W);
-			GUI.Label("  Wave", 0, GuiColor.DarkGrey);
+			GUI.Label("  Wave", 1024, GuiColor.DarkGrey);
 			ImGui.SameLine();
 			if (Searcher.SearchResults.Count != PrevResultCount) {
 				PrevResultCount = Searcher.SearchResults.Count;
@@ -293,7 +293,7 @@ public class Window : FlowWindow {
 				ImGui.Dummy(new Vector2(1, ITEM_H));
 				var min = ImGui.GetItemRectMin();
 				var max = ImGui.GetItemRectMax();
-				max.X = ImGui.GetContentRegionAvail().X + WindowPadding;
+				max.X = ImGui.GetContentRegionAvail().X + winPos.X;
 				bool hovering = winHv && mousePos.X < max.X && mousePos.Y >= min.Y && mousePos.Y < max.Y;
 				if (hovering) {
 					textColor = selecting ? GuiColor.Green : GuiColor.White;
@@ -308,9 +308,8 @@ public class Window : FlowWindow {
 				}
 
 				// Base
-				bool press = false;
 				ImGui.SameLine();
-				press = GUI.Button(line.BaseName, BASE_W - ITEM_PADDING, ITEM_H, GuiColor.Clear, textColor) && winHv;
+				GUI.Label(line.BaseName, BASE_W - ITEM_PADDING, textColor);
 
 				// Tint
 				if (i % 2 == 1) {
@@ -319,17 +318,18 @@ public class Window : FlowWindow {
 
 				// Name
 				ImGui.SameLine(BASE_W);
-				press = (GUI.Button(line.Name, NAME_W - ITEM_PADDING, ITEM_H, GuiColor.Clear, textColor) && winHv) || press;
-				var nameMin = ImGui.GetItemRectMin();
+				float nameX = ImGui.GetCursorPosX() + winPos.X;
+				GUI.HighlightLabel(line.Name, line.Keyword, NAME_W - ITEM_PADDING, textColor);
+				GUI.DrawLine(nameX - ITEM_PADDING / 2, min.Y, nameX - ITEM_PADDING / 2, max.Y, GuiColor.Grey, 0.15f, 2f);
 
 				// Played Mark
 				if (PlayedPathIDs.Contains(line.PathID)) {
-					GUI.DrawFilledCircle(nameMin.X - 8f, nameMin.Y + ITEM_H / 2, ITEM_H * 0.1f, GuiColor.DarkGreen, 1f, 24);
+					GUI.DrawFilledCircle(nameX - 8f, min.Y + ITEM_H / 2, ITEM_H * 0.1f, GuiColor.DarkGreen, 1f, 24);
 				}
 
 				// Wave
 				ImGui.SameLine(BASE_W + NAME_W);
-				float waveX = ImGui.GetWindowPos().X + ImGui.GetCursorPosX();
+				float waveX = winPos.X + ImGui.GetCursorPosX();
 				bool waveDragging = false;
 				bool wavClicked = false;
 				waveDragging = GUI.Button("", out wavClicked, max.X - waveX, ITEM_H, GuiColor.Clear, returnHolding: true);
@@ -337,6 +337,12 @@ public class Window : FlowWindow {
 					i, waveX + WAVE_BORD, min.Y + WAVE_BORD, max.X - waveX - WAVE_BORD, max.Y - min.Y - WAVE_BORD,
 					waveDragging, wavClicked, winPos.Y, winPos.Y + winSize.Y
 				);
+
+				// Press
+				bool press = false;
+				if (winHv && ImGui.IsMouseHoveringRect(min, new(waveX, max.Y)) && GUI.MouseLeftDown) {
+					press = true;
+				}
 
 				if (!winHv) {
 					waveDragging = false;

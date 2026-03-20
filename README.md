@@ -13,6 +13,10 @@
 
 ### Changes
 
+`v1.0.3`
+
+- Highlight searching keyword in sound name.
+
 `v1.0.2`
 
 - Search with `-` to remove keyword from result. Search "wind -windy" will show all sound files with "wind" but no "windy" in their name.

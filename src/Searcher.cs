@@ -21,11 +21,12 @@ public class Searcher {
 		public string BaseName;
 		public string Name;
 		public string Path;
+		public string Keyword;
 		public int PathID;
 		public float StartTime01;
 		public float EndTime01;
 
-		public SearchResultLine (string path, string audioRootPath) {
+		public SearchResultLine (string path, string audioRootPath, string keyword) {
 			Path = path;
 			PathID = path.AngeHash();
 			Name = Util.GetNameWithoutExtension(path);
@@ -34,6 +35,7 @@ public class Searcher {
 			} else {
 				BaseName = Util.GetParentPath(Path);
 			}
+			Keyword = keyword;
 			StartTime01 = 0f;
 			EndTime01 = 1f;
 		}
@@ -204,6 +206,7 @@ public class Searcher {
 			}
 			// Search
 			foreach (var (path, name) in ImportedPaths) {
+				string keyword = "";
 				// Search Check
 				if (SearchPatterns.Count > 0) {
 					bool contains = false;
@@ -211,7 +214,10 @@ public class Searcher {
 					foreach (var (pat, type) in SearchPatterns) {
 						switch (type) {
 							case PatternType.Contains:
-								if (name.Contains(pat)) contains = true;
+								if (name.Contains(pat)) {
+									contains = true;
+									keyword = pat;
+								}
 								break;
 							case PatternType.Remove:
 								if (name.Contains(pat)) remove = true;
@@ -227,7 +233,7 @@ public class Searcher {
 				}
 				if (stamp != SearchStamp) return;
 				// Add Path
-				SearchResults.Add(new SearchResultLine(path, AudioRootPath));
+				SearchResults.Add(new SearchResultLine(path, AudioRootPath, keyword));
 			}
 		} catch (System.Exception ex) { LogEx(ex); }
 		Searching = false;

@@ -98,8 +98,11 @@ public static class GUI {
 
 	public static void Label (string text, float width, GuiColor color = GuiColor.WhiteAlmost) {
 		using var _ = new StyleColorScope(ImGuiCol.Text, color);
+		var pos = ImGui.GetCursorPos() + ImGui.GetWindowPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
+		var height = ImGui.GetFrameHeight();
+		using var __ = new ClipScope(new(pos.X, pos.Y), new(pos.X + width, pos.Y + height));
 		ImGui.SetNextItemWidth(width);
-		ImGui.LabelText(text, "");
+		ImGui.Text(text);
 	}
 
 	public static bool Input (string label, ref string text, uint maxLen = 128, float width = -1f, GuiColor bodyColor = GuiColor.VividCyan, GuiColor color = GuiColor.WhiteAlmost) {
@@ -122,6 +125,50 @@ public static class GUI {
 		var max = ImGui.GetItemRectMax();
 		float x = right ? max.X : min.X;
 		DrawLine(x + shiftX, max.Y, x + shiftX, min.Y, color, thickness);
+	}
+
+	public static void HighlightLabel (string text, string highlightKeyword, float width, GuiColor color = GuiColor.WhiteAlmost, GuiColor highlightColor = GuiColor.Orange) {
+
+		if (string.IsNullOrEmpty(highlightKeyword)) {
+			Label(text, width, color);
+			return;
+		}
+
+		int index = text.IndexOf(highlightKeyword, StringComparison.OrdinalIgnoreCase);
+		if (index < 0) {
+			Label(text, width, color);
+			return;
+		}
+		var allSpan = text.AsSpan();
+
+		// Clip
+		var pos = ImGui.GetCursorPos() + ImGui.GetWindowPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
+		var height = ImGui.GetFrameHeight();
+		using var __ = new ClipScope(new(pos.X, pos.Y), new(pos.X + width, pos.Y + height));
+
+		// First
+		var firstSpan = allSpan.Slice(0, index);
+		using (new StyleColorScope(ImGuiCol.Text, color)) {
+			ImGui.SetNextItemWidth(0);
+			ImGui.Text(firstSpan);
+		}
+
+		// Mid
+		var midSpan = allSpan.Slice(index, highlightKeyword.Length);
+		using (new StyleColorScope(ImGuiCol.Text, highlightColor)) {
+			ImGui.SameLine();
+			ImGui.SetNextItemWidth(0);
+			ImGui.Text(midSpan);
+		}
+
+		// Last
+		var lastSpan = allSpan.Slice(index + highlightKeyword.Length, allSpan.Length - index - highlightKeyword.Length);
+		using (new StyleColorScope(ImGuiCol.Text, color)) {
+			ImGui.SameLine();
+			ImGui.SetNextItemWidth(0);
+			ImGui.Text(lastSpan);
+		}
+
 	}
 
 

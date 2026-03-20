@@ -57,7 +57,7 @@ public readonly struct IdScope : IDisposable {
 
 public readonly struct WidthScope : IDisposable {
 	public WidthScope () : this(default) { }
-	public WidthScope (int width) => ImGui.PushItemWidth(width);
+	public WidthScope (float width) => ImGui.PushItemWidth(width);
 	public void Dispose () => ImGui.PopItemWidth();
 }
 
@@ -82,4 +82,10 @@ public readonly struct StyleScope : IDisposable {
 	public StyleScope (ImGuiStyleVar var, float value) => ImGui.PushStyleVar(var, value);
 	public StyleScope (ImGuiStyleVar var, Vector2 value) => ImGui.PushStyleVar(var, value);
 	public void Dispose () => ImGui.PopStyleVar();
+}
+
+
+public readonly struct ClipScope : IDisposable {
+	public ClipScope (Vector2 min, Vector2 max) => ImGui.PushClipRect(min, max, true);
+	public void Dispose () => ImGui.PopClipRect();
 }
