@@ -6,7 +6,7 @@
 
 <img src="res/Screenshot.png"/>
 
-### Download
+### Download 
 
 - [Releases Section](https://github.com/Mo-enen/QuickSound/releases)
 
