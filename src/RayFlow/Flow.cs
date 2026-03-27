@@ -77,10 +77,15 @@ public static class Flow {
 		}
 
 		// Init Raylib
+#if DEBUG
 		Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
+#else
+		Raylib.SetTraceLogLevel(TraceLogLevel.None);
+#endif
+		Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
 		Raylib.SetWindowState(ConfigFlags.AlwaysRunWindow | ConfigFlags.ResizableWindow);
 		Raylib.InitWindow(WindowWidth, WindowHeight, "");
-		Raylib.SetTargetFPS(48);
+		Raylib.SetTargetFPS(30);
 		Raylib.InitAudioDevice();
 		Raylib.SetExitKey(Raylib_cs.KeyboardKey.Null);
 		Raylib.DisableEventWaiting();
@@ -108,7 +113,7 @@ public static class Flow {
 		}
 		Raylib.SetWindowPosition(WindowX, WindowY);
 		Raylib.SetWindowSize(WindowWidth, WindowHeight);
-		Raylib.SetWindowTitle(GetDisplayName(assembly.GetName().Name));
+		Raylib.SetWindowTitle(GetDisplayName(assemblyName));
 		Raylib.SetWindowFocused();
 
 		// Resource
@@ -131,14 +136,25 @@ public static class Flow {
 
 		// GUI Setup
 		rlImGui.Setup(darkTheme: true, enableDocking: false);
-		var io = ImGui.GetIO();
-		io.ConfigDebugIniSettings = false;
-		io.WantSaveIniSettings = false;
 
 		// Init Font
 		var ImGuiContext = ImGui.CreateContext();
 		ImGui.SetCurrentContext(ImGuiContext);
+
 		unsafe {
+
+			var nativeIO = ImGuiNative.igGetIO();
+			nativeIO->WantSaveIniSettings = 0;
+			nativeIO->IniFilename = null;
+			nativeIO->LogFilename = null;
+			nativeIO->ConfigDebugIniSettings = 0;
+			var imguiIO = ImGuiNative.ImGuiIO_ImGuiIO();
+			imguiIO->WantSaveIniSettings = 0;
+			imguiIO->IniFilename = null;
+			imguiIO->LogFilename = null;
+			imguiIO->ConfigDebugIniSettings = 0;
+
+			var io = ImGui.GetIO();
 			fixed (byte* p = FontBytes) {
 				MainFontPtr = io.Fonts.AddFontFromMemoryTTF(
 					(nint)p, FontBytes.Length, 48, default, io.Fonts.GetGlyphRangesDefault()
@@ -158,6 +174,7 @@ public static class Flow {
 
 		// Final
 		window.Start();
+		DeleteGuiIniFile();
 		GC.Collect();
 
 	}
@@ -233,6 +250,7 @@ public static class Flow {
 #endif
 		rlImGui.Shutdown();
 		Raylib.CloseWindow();
+		DeleteGuiIniFile();
 	}
 
 	// UTL
@@ -292,6 +310,15 @@ public static class Flow {
 		fs.Flush();
 		sw.Close();
 		fs.Close();
+	}
+
+	private static void DeleteGuiIniFile () {
+		try {
+			string iniPath = "imgui.ini";
+			if (FileExists(iniPath)) {
+				File.Delete(iniPath);
+			}
+		} catch (System.Exception ex) { Debug.LogException(ex); }
 	}
 
 }

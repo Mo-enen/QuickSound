@@ -210,12 +210,19 @@ public class Window : FlowWindow {
 
 		// Import Check
 		if (Searcher.Importing) {
+			float winWidth = ImGui.GetWindowWidth();
 			ImGui.Spacing();
-			GUI.Label($"Importing... ({Searcher.ImportPathCount})", 0, GuiColor.White);
-			GUI.Label(Searcher.ImportingMsg, 0, GuiColor.Grey);
-		} else if (!Searcher.Imported || string.IsNullOrEmpty(Searcher.AudioRootPath)) {
+			GUI.Label($"Importing... ({Searcher.ImportPathCount})", winWidth, GuiColor.White);
+			GUI.Label(Searcher.ImportingMsg, winWidth, GuiColor.Grey);
+		} else if (
+			!Searcher.Imported ||
+			string.IsNullOrEmpty(Searcher.AudioRootPath) ||
+			Searcher.ImportPathCount == 0
+		) {
+			float winWidth = ImGui.GetWindowWidth();
 			ImGui.Spacing();
-			GUI.Label("Drag and drop a folder here to import all audio files inside", 0, GuiColor.Grey);
+			GUI.Label("Drag and drop a folder here to import all audio files inside", winWidth, GuiColor.Grey);
+			return;
 		}
 
 		if (!Searcher.Imported) return;
@@ -223,11 +230,12 @@ public class Window : FlowWindow {
 
 		// No Result Check
 		if (Searcher.SearchResults.Count == 0) {
+			float winWidth = ImGui.GetWindowWidth();
 			ImGui.Spacing();
 			if (Searcher.Searching) {
-				GUI.Label("Searching...", 0);
+				GUI.Label("Searching...", winWidth);
 			} else {
-				GUI.Label("(No Result)", 0);
+				GUI.Label("(No Result)", winWidth);
 			}
 			return;
 		}

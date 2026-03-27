@@ -16,6 +16,7 @@
 `v1.0.3`
 
 - Highlight searching keyword in sound name.
+- Fix bug: hint messages don't display.
 
 `v1.0.2`
 
