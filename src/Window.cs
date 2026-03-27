@@ -85,7 +85,7 @@ public class Window : FlowWindow {
 		// Root Label
 		const string ROOT_LABEL = "Audio Folder:";
 		float labelW = ImGui.CalcTextSize(ROOT_LABEL).X + 24;
-		GUI.Label(ROOT_LABEL, 0, GuiColor.DarkGrey);
+		GUI.Label(ROOT_LABEL, labelW, GuiColor.DarkGrey);
 
 		// Root Input
 		ImGui.SameLine(labelW);
@@ -123,7 +123,7 @@ public class Window : FlowWindow {
 		// =========== Second Row ===========
 		if (!string.IsNullOrEmpty(AudioRootPath) && Searcher.Imported && Searcher.ImportPathCount > 0) {
 			// Export Label
-			GUI.Label("Export To:", 0, GuiColor.DarkGrey);
+			GUI.Label("Export To:", labelW, GuiColor.DarkGrey);
 
 			// Export Input
 			ImGui.SameLine(labelW);
