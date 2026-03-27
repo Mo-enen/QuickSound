@@ -4,7 +4,7 @@
 
 ### Screenshot
 
-<img src="res/Screenshot.png"/>
+<img src="res/Screenshot v1.0.3.png"/>
 
 ### Download 
 
