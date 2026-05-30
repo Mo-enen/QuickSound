@@ -99,7 +99,7 @@ public class Wave {
 			}
 			// Write To File
 			for (int i = 0; i < WAVE_LEN; i++) {
-				writer.Write((int)result.Data[i]);
+				writer.Write((byte)result.Data[i]);
 			}
 #if DEBUG
 			// Msg

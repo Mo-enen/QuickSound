@@ -520,8 +520,9 @@ public class Window : FlowWindow {
 		var line = Searcher.SearchResults[SelectingIndex];
 		if (!Util.FileExists(line.Path)) return;
 
+		bool cropped = line.StartTime01 > 0.001f || line.EndTime01 < 0.999f;
 		string name = Util.GetNameWithoutExtension(line.Path);
-		string ext = Util.GetExtensionWithDot(line.Path);
+		string ext = cropped ? ".wav" : Util.GetExtensionWithDot(line.Path);
 		string exportFilePath = Util.CombinePaths(ExportPath, name + ext);
 
 		for (int safe = 1; safe < 1024; safe++) {
@@ -529,7 +530,7 @@ public class Window : FlowWindow {
 			exportFilePath = Util.CombinePaths(ExportPath, $"{name}_{safe}{ext}");
 		}
 
-		if (line.StartTime01 > 0.001f || line.EndTime01 < 0.999f) {
+		if (cropped) {
 			// Require Crop
 			// Load Wave
 			var wave = Raylib.LoadWave(line.Path);
@@ -774,7 +775,7 @@ public class Window : FlowWindow {
 			//if (mouseX < rightEdgeX) {
 			//	line.StartTime01 = (Math.Clamp(mouseX, x, rightEdgeX) - x) / width;
 			//}
-			
+
 			PlaySelectingWave(line.StartTime01);
 		}
 
