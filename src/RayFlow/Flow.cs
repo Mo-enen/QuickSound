@@ -85,7 +85,7 @@ public static class Flow {
 		Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
 		Raylib.SetWindowState(ConfigFlags.AlwaysRunWindow | ConfigFlags.ResizableWindow);
 		Raylib.InitWindow(WindowWidth, WindowHeight, "");
-		Raylib.SetTargetFPS(30);
+		Raylib.SetTargetFPS(window.TargetFPS);
 		Raylib.InitAudioDevice();
 		Raylib.SetExitKey(Raylib_cs.KeyboardKey.Null);
 		Raylib.DisableEventWaiting();

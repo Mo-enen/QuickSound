@@ -23,6 +23,7 @@ public class Window : FlowWindow {
 	// Api
 	public override string DeveloperName => "Moenen";
 	public override int WindowPadding => 96;
+	public override int TargetFPS => 60;
 
 	// Data
 	private readonly Searcher Searcher = new();
@@ -524,8 +525,14 @@ public class Window : FlowWindow {
 		var line = Searcher.SearchResults[SelectingIndex];
 		if (!Util.FileExists(line.Path)) return;
 
-		string name = Util.GetNameWithExtension(line.Path);
-		string exportFilePath = Util.CombinePaths(ExportPath, name);
+		string name = Util.GetNameWithoutExtension(line.Path);
+		string ext = Util.GetExtensionWithDot(line.Path);
+		string exportFilePath = Util.CombinePaths(ExportPath, name + ext);
+
+		for (int safe = 1; safe < 1024; safe++) {
+			if (!Util.FileExists(exportFilePath)) break;
+			exportFilePath = Util.CombinePaths(ExportPath, $"{name}_{safe}{ext}");
+		}
 
 		if (line.StartTime01 > 0.001f || line.EndTime01 < 0.999f) {
 			// Require Crop

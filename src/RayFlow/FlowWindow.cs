@@ -11,6 +11,7 @@ public abstract class FlowWindow {
 	public abstract string DeveloperName { get; }
 	public virtual int WindowPadding => 42;
 	public virtual Color BackgroundColor => new Color(12, 12, 12, 255);
+	public virtual int TargetFPS => 30;
 	public string SavingFolder => System.IO.Path.Combine(Environment.GetFolderPath(
 	Environment.SpecialFolder.LocalApplicationData),
 	DeveloperName,
