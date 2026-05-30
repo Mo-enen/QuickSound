@@ -25,6 +25,8 @@ public class Searcher {
 		public int PathID;
 		public float StartTime01;
 		public float EndTime01;
+		public float ViewStartTime01;
+		public float ViewEndTime01;
 
 		public SearchResultLine (string path, string audioRootPath, string keyword) {
 			Path = path;
@@ -38,6 +40,8 @@ public class Searcher {
 			Keyword = keyword;
 			StartTime01 = 0f;
 			EndTime01 = 1f;
+			ViewStartTime01 = 0f;
+			ViewEndTime01 = 1f;
 		}
 
 	}

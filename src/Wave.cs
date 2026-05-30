@@ -16,11 +16,12 @@ public class Wave {
 
 
 	// Const
-	public const int WAVE_LEN = 1024;
+	private static readonly byte[] DEFAULT_DATA = [0];
+	private const int SCL = 60;
 
 	// Api
 	public static string WaveCacheRoot = "";
-	public readonly byte[] Data = new byte[WAVE_LEN];
+	public byte[] Data { get; private set; } = DEFAULT_DATA;
 
 
 	#endregion
@@ -34,17 +35,10 @@ public class Wave {
 	public void LoadFromFile (string path) {
 		using var stream = File.OpenRead(path);
 		using var reader = new BinaryReader(stream);
-		for (int i = 0; i < WAVE_LEN && reader.NotEnd(); i++) {
+		int waveLen = reader.ReadInt32();
+		Data = new byte[waveLen];
+		for (int i = 0; i < waveLen; i++) {
 			Data[i] = reader.ReadByte();
-		}
-	}
-
-
-	public void SaveToFile (string path) {
-		using var stream = File.Create(path);
-		using var writer = new BinaryWriter(stream);
-		for (int i = 0; i < WAVE_LEN; i++) {
-			writer.Write((byte)Data[i]);
 		}
 	}
 
@@ -76,7 +70,9 @@ public class Wave {
 			int channelCount = (int)wave.Channels;
 			int currentWaveIndex = 0;
 			float currentWaveSample = 0f;
-
+			int WAVE_LEN = Util.Max(sCount / SCL, 16);
+			writer.Write((int)WAVE_LEN);
+			result.Data = new byte[WAVE_LEN];
 			for (int i = 0; i < sCount; i++) {
 				// Get Sample
 				float sample = 0f;
@@ -85,27 +81,31 @@ public class Wave {
 					sample = MathF.Max(MathF.Abs(v), sample);
 				}
 				// Merge Sample
-				int waveIndex = i * WAVE_LEN / sCount;
+				int waveIndex = (int)((double)i * WAVE_LEN / sCount);
 				if (waveIndex == currentWaveIndex) {
 					// Merge
 					currentWaveSample = MathF.Max(sample, currentWaveSample);
 					if (i == sCount - 1) {
 						byte b = (byte)Math.Clamp(currentWaveSample * 255, 0, 255);
-						writer.Write(b);
 						result.Data[Math.Clamp(currentWaveIndex, 0, WAVE_LEN - 1)] = b;
 					}
 				} else {
 					// Change
 					currentWaveIndex = waveIndex;
 					byte b = (byte)Math.Clamp(currentWaveSample * 255, 0, 255);
-					writer.Write(b);
 					result.Data[Math.Clamp(currentWaveIndex, 0, WAVE_LEN - 1)] = b;
 					currentWaveSample = 0f;
 				}
 			}
+			// Write To File
+			for (int i = 0; i < WAVE_LEN; i++) {
+				writer.Write((int)result.Data[i]);
+			}
 #if DEBUG
 			// Msg
-			Debug.LogSuccess($"Wave Loaded: {Util.GetNameWithoutExtension(audioFilePath)}\n");
+			Debug.LogSuccess("Wave Loaded:", Util.GetNameWithoutExtension(audioFilePath));
+			Debug.LogSuccess("ChannelCount:", channelCount);
+			Debug.LogSuccess("SampleCount:", sCount, "\n");
 #endif
 		} catch (System.Exception ex) { Debug.LogException(ex); }
 

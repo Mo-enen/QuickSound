@@ -371,11 +371,6 @@ public class Window : FlowWindow {
 					PlaySelectingWave();
 				}
 
-				// Wave Click
-				if (wavClicked) {
-					PlaySelectingWave((mousePos.X - waveX - WAVE_BORD) / (max.X - waveX - WAVE_BORD));
-				}
-
 				anyClick = anyClick || press || waveDragging || wavClicked;
 			}
 			GUI.Label("", 0);
@@ -626,8 +621,8 @@ public class Window : FlowWindow {
 			WavePool.RequireWave(line.PathID, line.Path);
 		}
 
-		float leftEdgeX = x + width * line.StartTime01;
-		float rightEdgeX = x + width * line.EndTime01;
+		float leftEdgeX = x + width * Util.RemapUnclamped(line.ViewStartTime01, line.ViewEndTime01, 0f, 1f, line.StartTime01);
+		float rightEdgeX = x + width * Util.RemapUnclamped(line.ViewStartTime01, line.ViewEndTime01, 0f, 1f, line.EndTime01);
 		var mouseX = GUI.MousePos.X;
 		var mouseY = GUI.MousePos.Y;
 		bool leftEdgeChanged = leftEdgeX > x;
@@ -641,16 +636,20 @@ public class Window : FlowWindow {
 		);
 
 		// Content
+		int wavLen = wave != null ? wave.Data.Length : 1;
 		var waveColor = SelectingIndex == index ? GuiColor.Green : GuiColor.DarkWhite;
 		var outsideWaveColor = GuiColor.DarkGrey;
-		float thickness = (width / Wave.WAVE_LEN) + 1f;
+		float thickness = (width / wavLen) + 1f;
 		float centerY = y + height / 2f;
 		GUI.DrawLine(x, centerY, leftEdgeX, centerY, outsideWaveColor, 1f, 1.5f);
 		GUI.DrawLine(rightEdgeX, centerY, x + width, centerY, outsideWaveColor, 1f, 1.5f);
 		GUI.DrawLine(leftEdgeX, centerY, rightEdgeX, centerY, waveColor, 1f, 1.5f);
 		if (wave != null) {
-			for (int i = 0; i < Wave.WAVE_LEN; i++) {
-				float lineX = x + width * i / Wave.WAVE_LEN;
+			int startSample = (int)(line.ViewStartTime01 * wavLen);
+			int endSample = (int)(line.ViewEndTime01 * wavLen);
+			for (int i = startSample; i < endSample; i++) {
+				float lineX = Util.RemapUnclamped(startSample, endSample, x, x + width, i);
+				//float lineX = x + width * i / Wave.WAVE_LEN;
 				float lineH = height * wave.Data[i] / 512f;
 				var color = lineX >= leftEdgeX && lineX <= rightEdgeX ? waveColor.ToVec4() : outsideWaveColor.ToVec4();
 				float yMin = Math.Clamp(centerY - lineH, clampMinY, clampMaxY);
@@ -692,6 +691,8 @@ public class Window : FlowWindow {
 			if (GUI.MouseMidDown) {
 				line.StartTime01 = 0f;
 				line.EndTime01 = 1f;
+				line.ViewStartTime01 = 0f;
+				line.ViewEndTime01 = 1f;
 			}
 		}
 
@@ -716,7 +717,7 @@ public class Window : FlowWindow {
 		if (SelectingIndex == index && IsMusicPlaying()) {
 			float playTime = Raylib.GetMusicTimePlayed(music);
 			float dur = Raylib.GetMusicTimeLength(music);
-			float playX = x + width * playTime / dur;
+			float playX = x + width * Util.RemapUnclamped(line.ViewStartTime01, line.ViewEndTime01, 0f, 1f, playTime / dur);
 			GUI.DrawLine(
 				playX, y, playX, y + height,
 				GuiColor.Red,
@@ -736,19 +737,23 @@ public class Window : FlowWindow {
 			// Dragging
 			switch (DraggingWaveEdgeIndex) {
 				// Left
-				case 2:
-					line.StartTime01 = (Math.Clamp(mouseX - DraggingEdgeOffsetX, x, rightEdgeX) - x) / width;
+				case 2: {
+					float field01 = (Math.Clamp(mouseX - DraggingEdgeOffsetX, x, rightEdgeX) - x) / width;
+					line.StartTime01 = Util.RemapUnclamped(0f, 1f, line.ViewStartTime01, line.ViewEndTime01, field01);
 					Dragged = true;
 					GUI.RequireCursor = MouseCursor.ResizeEw;
 					break;
+				}
 				// Right
-				case 3:
-					line.EndTime01 = (Math.Clamp(mouseX - DraggingEdgeOffsetX, leftEdgeX, x + width) - x) / width;
+				case 3: {
+					float field01 = (Math.Clamp(mouseX - DraggingEdgeOffsetX, leftEdgeX, x + width) - x) / width;
+					line.EndTime01 = Util.RemapUnclamped(0f, 1f, line.ViewStartTime01, line.ViewEndTime01, field01);
 					Dragged = true;
 					GUI.RequireCursor = MouseCursor.ResizeEw;
 					break;
+				}
 				// Inside
-				default:
+				default: {
 					if (!Dragged) break;
 					// Dragged
 					float startMouseX = GUI.MouseLeftDownPos.X;
@@ -756,16 +761,28 @@ public class Window : FlowWindow {
 					if (endMouseX < startMouseX) {
 						(startMouseX, endMouseX) = (endMouseX, startMouseX);
 					}
-					line.StartTime01 = (Math.Clamp(startMouseX, x, x + width) - x) / width;
-					line.EndTime01 = (Math.Clamp(endMouseX, startMouseX, x + width) - x) / width;
+					float fieldStart01 = (Math.Clamp(startMouseX, x, x + width) - x) / width;
+					float fieldEnd01 = (Math.Clamp(endMouseX, startMouseX, x + width) - x) / width;
+					line.StartTime01 = Util.RemapUnclamped(0f, 1f, line.ViewStartTime01, line.ViewEndTime01, fieldStart01);
+					line.EndTime01 = Util.RemapUnclamped(0f, 1f, line.ViewStartTime01, line.ViewEndTime01, fieldEnd01);
 					GUI.RequireCursor = MouseCursor.Crosshair;
 					break;
+				}
 			}
 		}
 		if (click && !Dragged) {
-			if (mouseX < rightEdgeX) {
-				line.StartTime01 = (Math.Clamp(mouseX, x, rightEdgeX) - x) / width;
-			}
+			//if (mouseX < rightEdgeX) {
+			//	line.StartTime01 = (Math.Clamp(mouseX, x, rightEdgeX) - x) / width;
+			//}
+			
+			PlaySelectingWave(line.StartTime01);
+		}
+
+		// Sync View Start/End
+		if (!GUI.MouseLeftHolding && !dragging) {
+			float gap01 = Util.Max(0, (line.EndTime01 - line.StartTime01) / 10f);
+			line.ViewStartTime01 = (line.StartTime01 - gap01).Clamp01();
+			line.ViewEndTime01 = (line.EndTime01 + gap01).Clamp01();
 		}
 
 	}

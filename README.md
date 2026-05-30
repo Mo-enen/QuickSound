@@ -13,6 +13,11 @@
 
 ### Changes
 
+`v1.1.0`
+
+- Fix bug: Wave too long do not render.
+- Clipped wave now get the view focus in that range.
+
 `v1.0.3`
 
 - Highlight searching keyword in sound name.
