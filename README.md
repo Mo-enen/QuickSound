@@ -13,6 +13,10 @@
 
 ### Changes
 
+`v1.1.1`
+
+- Better performance for wave field rendering.
+
 `v1.1.0`
 
 - Fix bug: Wave too long do not render.
