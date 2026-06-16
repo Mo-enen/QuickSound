@@ -640,7 +640,6 @@ public class Window : FlowWindow {
 		int wavLen = wave != null ? wave.Data.Length : 1;
 		var waveColor = SelectingIndex == index ? GuiColor.Green : GuiColor.DarkWhite;
 		var outsideWaveColor = GuiColor.DarkGrey;
-		float thickness = (width / wavLen) + 1f;
 		float centerY = y + height / 2f;
 		GUI.DrawLine(x, centerY, leftEdgeX, centerY, outsideWaveColor, 1f, 1.5f);
 		GUI.DrawLine(rightEdgeX, centerY, x + width, centerY, outsideWaveColor, 1f, 1.5f);
@@ -648,9 +647,10 @@ public class Window : FlowWindow {
 		if (wave != null) {
 			int startSample = (int)(line.ViewStartTime01 * wavLen);
 			int endSample = (int)(line.ViewEndTime01 * wavLen);
-			for (int i = startSample; i < endSample; i++) {
+			int deltaI = ((endSample - startSample) / 1000).Clamp(1, 100);
+			float thickness = (width / ((endSample - startSample) / deltaI)) + 1f;
+			for (int i = startSample; i < endSample; i += deltaI) {
 				float lineX = Util.RemapUnclamped(startSample, endSample, x, x + width, i);
-				//float lineX = x + width * i / Wave.WAVE_LEN;
 				float lineH = height * wave.Data[i] / 512f;
 				var color = lineX >= leftEdgeX && lineX <= rightEdgeX ? waveColor.ToVec4() : outsideWaveColor.ToVec4();
 				float yMin = Math.Clamp(centerY - lineH, clampMinY, clampMaxY);
